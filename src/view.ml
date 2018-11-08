@@ -37,8 +37,9 @@ let plot_on_click e =
 
 let set_color c =
   match c with
-  | Red -> set_color red
-  | Blue -> set_color blue
+  | None -> set_color black
+  | Some Red -> set_color red
+  | Some Blue -> set_color blue
          
 let edges =
   let w = float_of_int window_width in
@@ -46,10 +47,10 @@ let edges =
   let e1, e2, e3, e4 =
     {x=0.; y=0.}, {x=w; y=0.}, {x=0.; y=h}, {x=w; y=h}
   in [e1; e2; e3; e4], [
-      {pt1=e1;pt2=e2;c=Blue};
-      {pt1=e1;pt2=e3;c=Blue};
-      {pt1=e2;pt2=e4;c=Blue};
-      {pt1=e3;pt2=e4;c=Blue}
+      {pt1=e1;pt2=e2;c=None};
+      {pt1=e1;pt2=e3;c=None};
+      {pt1=e2;pt2=e4;c=None};
+      {pt1=e3;pt2=e4;c=None}
     ] 
   
 let plot_bsp bsp =
@@ -85,10 +86,10 @@ let plot_bsp bsp =
        in
        aux left left_pts (l :: edges_l);
        aux right right_pts (l :: edges_r)
-    | R c ->
-       match c with
+    | R color ->
+       match color with
        | None -> ()
-       | Some c ->
+       | Some color as c ->
           set_color c;
           let poly =
             Array.map
