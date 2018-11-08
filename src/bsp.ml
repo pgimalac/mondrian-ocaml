@@ -20,7 +20,10 @@ let is_left pt line =
   | None -> pt.x <= line.pt1.x
   | Some (a, b) -> a *. pt.x +. b <= pt.y
 
-let is_right pt line = not (is_left pt line)
+let is_right pt line =
+  match coefs line with
+  | None -> pt.x >= line.pt1.x
+  | Some (a, b) -> a *. pt.x +. b >= pt.y
                      
 let intersect l1 l2 =
   match coefs l1, coefs l2 with
@@ -60,6 +63,28 @@ let rec insert bsp line =
           in
           let linel = {pt1 = pt; pt2 = ptl; c = line.c} in
           let liner = {pt1 = pt; pt2 = ptr; c = line.c} in
-          L (l, insert left linel, insert right liner)
+          if pt = ptl
+          then if pt = ptr
+               then L (l, left, right)
+               else L (l, left, insert right liner)
+          else if pt = ptr
+          then L (l, insert left linel, right)
+          else L (l, insert left linel, insert right liner)
      end
   | r -> L (line, r, r)
+
+let rec change_color bsp pt =
+  match bsp with
+  | L (l, left, right) ->
+     let left, right =
+       if is_left pt l
+       then change_color left pt, right
+       else left, change_color right pt
+     in
+    L (l, left, right)
+  | R(c) ->
+     match c with
+     | None -> R (Some (Red))
+     | Some (Red) -> R (Some (Blue))
+     | Some (Blue) -> R (Some (Red))
+
