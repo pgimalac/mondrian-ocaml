@@ -1,5 +1,5 @@
 NAME = mondrian
-SOURCES = view.ml bsp.ml
+SOURCES = bsp.ml view.ml
 MAIN = main.ml
 
 CAMLC = ocamlc
