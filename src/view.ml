@@ -4,7 +4,7 @@ open Bsp
 let window_width = 600
 let window_height = 600
 
-exception Break
+exception Exit
                   
 let do_with_window
       ?(title=" Mondrian")
@@ -24,23 +24,33 @@ let do_with_window
   try
     while true do
       let e = wait_next_event [Button_down; Key_pressed] in
-      if e.keypressed && e.key = 'q' then raise Break;
+      if e.keypressed && e.key = 'q' then raise Exit;
       f e;
       synchronize ();
     done;
-  with Break -> ();
+  with Exit -> ();
   close_graph ()
-
-let plot_on_click e =
-  set_color black;
-  plot e.mouse_x e.mouse_y    
 
 let set_color c =
   match c with
   | None -> set_color black
   | Some Red -> set_color red
   | Some Blue -> set_color blue
-         
+
+let center pts =
+  let l, sx, sy =
+    List.fold_left
+      (fun (l, sx, sy) pt -> l +. 1., pt.x +. sx, pt.y +. sy)
+      (0., 0., 0.) pts
+  in {x = sx /. l; y = sy /. l}
+              
+let compare_counter_clockwise center x y =
+  let f =
+    if (x.x -. center.x) *. (y.x -. center.x) >= 0.
+    then (x.x -. center.x) *. (x.y -. y.y)
+    else x.x -. y.x
+  in int_of_float f
+
 let edges =
   let w = float_of_int window_width in
   let h = float_of_int window_height in
@@ -97,12 +107,13 @@ let plot_bsp bsp =
        | None -> ()
        | Some color as c ->
           set_color c;
+          let barycenter = center pts in
+          let poly = Array.of_list pts in
+          Array.sort (compare_counter_clockwise barycenter) poly;
           let poly =
             Array.map
-              (fun pt -> int_of_float pt.x, int_of_float pt.y)
-              (Array.of_list pts) in
+              (fun pt -> int_of_float pt.x, int_of_float pt.y) poly in
           Graphics.fill_poly poly;
-          Array.iter (fun (x, y) -> Graphics.fill_circle x y 10) poly
   in
   let pts, lines = edges in
   aux bsp pts lines
