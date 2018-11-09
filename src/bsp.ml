@@ -1,6 +1,6 @@
 type color = Blue | Red
 type point = { x : float; y : float; }
-type line = { pt1 : point; pt2 : point; c : color option; }
+type line = { pt1 : point; pt2 : point; }
 type bsp = R of color option | L of line * bsp * bsp
 
 let pi = 4.0 *. atan 1.0;;
@@ -67,8 +67,8 @@ let rec insert bsp line =
                 then line.pt1, line.pt2
                 else line.pt2, line.pt1
               in
-              let linel = {pt1 = pt; pt2 = ptl; c = line.c} in
-              let liner = {pt1 = pt; pt2 = ptr; c = line.c} in
+              let linel = {pt1 = pt; pt2 = ptl} in
+              let liner = {pt1 = pt; pt2 = ptr} in
               if pt = ptl
               then if pt = ptr
                    then L (l, left, right)

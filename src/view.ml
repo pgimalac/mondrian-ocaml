@@ -57,12 +57,12 @@ let edges =
   let e1, e2, e3, e4 =
     {x=0.; y=0.}, {x=w; y=0.}, {x=0.; y=h}, {x=w; y=h}
   in [e1; e2; e3; e4], [
-      {pt1=e1;pt2=e2;c=None};
-      {pt1=e1;pt2=e3;c=None};
-      {pt1=e2;pt2=e4;c=None};
-      {pt1=e3;pt2=e4;c=None}
+      {pt1=e1;pt2=e2};
+      {pt1=e1;pt2=e3};
+      {pt1=e2;pt2=e4};
+      {pt1=e3;pt2=e4}
     ] 
-   
+
 let plot_bsp bsp =
   let rec aux bsp pts edges =
     match bsp with
@@ -97,14 +97,11 @@ let plot_bsp bsp =
              else pts_l, pt :: pts_r
            ) ([], []) pts
        in
-       set_color l.c;
-       moveto (int_of_float l.pt1.x) (int_of_float l.pt1.y);
-       lineto (int_of_float l.pt2.x) (int_of_float l.pt2.y);
-       aux left left_pts (l :: edges_l);
+       l :: aux left left_pts (l :: edges_l) @
        aux right right_pts (l :: edges_r)
     | R color ->
        match color with
-       | None -> ()
+       | None -> []
        | Some color as c ->
           set_color c;
           let barycenter = center pts in
@@ -114,7 +111,15 @@ let plot_bsp bsp =
             Array.map
               (fun pt -> int_of_float pt.x, int_of_float pt.y) poly in
           Graphics.fill_poly poly;
+          []
   in
   let pts, lines = edges in
-  aux bsp pts lines
+  let lines = aux bsp pts lines in
+  Graphics.set_line_width 2;
+  List.iter (fun l -> 
+      Graphics.set_color black;
+      moveto (int_of_float l.pt1.x) (int_of_float l.pt1.y);
+      lineto (int_of_float l.pt2.x) (int_of_float l.pt2.y))
+    lines
+  
      

@@ -5,16 +5,16 @@ open Graphics
 let main () =
   let bsp = ref
     (L (
-        {pt1 = {x=200.; y=0.}; pt2 = {x=200.;y=600.}; c = Some Red},
+        {pt1 = {x=200.; y=0.}; pt2 = {x=200.;y=600.}},
         R (None),
         R (None)))
   in
   bsp :=
-    insert !bsp {pt1 = {x=200.;y=500.}; pt2 = {x=600.;y=550.}; c = Some Blue};
+    insert !bsp {pt1 = {x=200.;y=500.}; pt2 = {x=600.;y=550.}};
   bsp :=
-    insert !bsp {pt1 = {x=0.;y=500.}; pt2 = {x=200.;y=200.}; c = None};
+    insert !bsp {pt1 = {x=0.;y=500.}; pt2 = {x=200.;y=200.}};
   bsp :=
-    insert !bsp {pt1 = {x=600.;y=100.}; pt2 = {x=200.;y=200.}; c = None};
+    insert !bsp {pt1 = {x=600.;y=100.}; pt2 = {x=200.;y=200.}};
   View.do_with_window
     ~on_open:(fun () -> View.plot_bsp !bsp)
     (fun e ->
