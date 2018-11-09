@@ -52,38 +52,44 @@ let edges =
       {pt1=e2;pt2=e4;c=None};
       {pt1=e3;pt2=e4;c=None}
     ] 
-  
+   
 let plot_bsp bsp =
   let rec aux bsp pts edges =
     match bsp with
     | L (l, left, right) ->
        let pts, edges_l, edges_r =
          List.fold_left
-           (fun (pts, el, er) line ->
+           (fun (acc, el, er) line ->
              match intersect line l with
              | None ->
                 if is_left line.pt1 l
-                then pts, line :: el, er
-                else pts, el, line :: er
+                then acc, line :: el, er
+                else acc, el, line :: er
              | Some (pt) ->
-                if not (List.mem pt pts)
-                then pt :: pts, line :: el, line :: er
-                else pts, line :: el, line :: er
+                let add =
+                  not (List.mem pt acc) &&
+                    pt.x >= min l.pt1.x l.pt2.x &&
+                      pt.x <= max l.pt1.x l.pt2.x &&
+                    pt.y >= min l.pt1.y l.pt2.y &&
+                      pt.y <= max l.pt1.y l.pt2.y
+                in
+                if add
+                then pt :: acc, line :: el, line :: er
+                else acc, line :: el, line :: er
            ) (pts, [], []) edges
        in
-       set_color l.c;
-       moveto (int_of_float l.pt1.x) (int_of_float l.pt1.y);
-       lineto (int_of_float l.pt2.x) (int_of_float l.pt2.y);
        let left_pts, right_pts =
          List.fold_left (fun (pts_l, pts_r) pt ->
              if is_left pt l
              then if is_right pt l
                   then pt :: pts_l, pt :: pts_r
                   else pt :: pts_l, pts_r
-             else if is_right pt l
-             then pts_l, pt :: pts_r
-             else pts_l, pts_r) ([], []) pts
+             else pts_l, pt :: pts_r
+           ) ([], []) pts
        in
+       set_color l.c;
+       moveto (int_of_float l.pt1.x) (int_of_float l.pt1.y);
+       lineto (int_of_float l.pt2.x) (int_of_float l.pt2.y);
        aux left left_pts (l :: edges_l);
        aux right right_pts (l :: edges_r)
     | R color ->

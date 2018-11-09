@@ -41,9 +41,9 @@ let intersect l1 l2 =
           then Some l1.pt1
           else None
      else
-       let x = (b -. b') /. (a -. a') in
+       let x = (b' -. b) /. (a -. a') in
        let y = a *. x +. b in
-       Some {x = x; y = y}
+       Some {x=x; y=y}
      
   
 let rec insert bsp line =
@@ -56,20 +56,31 @@ let rec insert bsp line =
           then L (l, insert left line, right)
           else L (l, left, insert right line)
        | Some(pt) ->
-          let ptl, ptr =
-            if line.pt1.x <= pt.x
-            then line.pt1, line.pt2
-            else line.pt2, line.pt1
-          in
-          let linel = {pt1 = pt; pt2 = ptl; c = line.c} in
-          let liner = {pt1 = pt; pt2 = ptr; c = line.c} in
-          if pt = ptl
-          then if pt = ptr
-               then L (l, left, right)
-               else L (l, left, insert right liner)
-          else if pt = ptr
-          then L (l, insert left linel, right)
-          else L (l, insert left linel, insert right liner)
+          if pt.x >= min l.pt1.x l.pt2.x &&
+              pt.x <= max l.pt1.x l.pt2.x &&
+                pt.y >= min l.pt1.y l.pt2.y &&
+                  pt.y <= max l.pt1.y l.pt2.y
+          then
+            begin
+              let ptl, ptr = 
+                if line.pt1.x <= pt.x
+                then line.pt1, line.pt2
+                else line.pt2, line.pt1
+              in
+              let linel = {pt1 = pt; pt2 = ptl; c = line.c} in
+              let liner = {pt1 = pt; pt2 = ptr; c = line.c} in
+              if pt = ptl
+              then if pt = ptr
+                   then L (l, left, right)
+                   else L (l, left, insert right liner)
+              else if pt = ptr
+              then L (l, insert left linel, right)
+              else L (l, insert left linel, insert right liner)
+            end
+          else 
+            if is_left line.pt1 l
+            then L (l, insert left line, right)
+            else L (l, left, insert right line)
      end
   | r -> L (line, r, r)
 
@@ -81,10 +92,10 @@ let rec change_color bsp pt =
        then change_color left pt, right
        else left, change_color right pt
      in
-    L (l, left, right)
-  | R(c) ->
+     L (l, left, right)
+  | R c ->
      match c with
-     | None -> R (Some (Red))
-     | Some (Red) -> R (Some (Blue))
-     | Some (Blue) -> R (Some (Red))
+     | None -> R (Some Red)
+     | Some Red -> R (Some Blue)
+     | Some Blue -> R (Some Red)
 
