@@ -69,7 +69,6 @@ let edges w h =
       {pt1=e3;pt2=e4}
     ] 
 
-
 let rec insert bsp line =
   match bsp with
   | L (l, left, right) ->
@@ -124,13 +123,17 @@ let rec change_color bsp pt =
      | Some Blue -> R (Some Red)
 
 let _ = Random.self_init ()
-                 
+
+let in_bounds bound_min bound_max x =
+  max bound_min (max bound_max x)
+      
 let generate_random_bsp bound_x bound_y nb_line =
   let nb_line = nb_line + 4 in
   let rec gen_random_lines acc lines bound =
     if bound >= nb_line
     then acc
     else
+      let in_bounds_y = in_bounds 0. bound_y in
       let i = Random.int bound in
       let j = Random.int bound in
       if i = j
@@ -148,21 +151,21 @@ let generate_random_bsp bound_x bound_y nb_line =
           | Some (a, b), None ->
              let random_x = Random.float bound_x in
              {
-               pt1={x=random_x;y=random_x *. a +. b};
+               pt1={x=random_x;y=in_bounds_y (random_x *. a +. b)};
                pt2={x=d_i.pt2.x;y=Random.float bound_y}
              }
           | None, Some (a, b) ->
              let random_x = Random.float bound_x in
              {
                pt1={x=d_i.pt1.x;y=Random.float bound_y};
-               pt2={x=random_x;y=random_x *. a +. b};
+               pt2={x=random_x;y=in_bounds_y (random_x *. a +. b)};
              }
           | Some (a, b), Some (a', b') ->
              let random_xi = Random.float bound_x in
              let random_xj = Random.float bound_x in
              {
-               pt1={x=random_xi;y=random_xi *. a +. b};
-               pt2={x=random_xj;y=random_xj *. a' +. b'};
+               pt1={x=random_xi;y=in_bounds_y (random_xi *. a +. b)};
+               pt2={x=random_xj;y=in_bounds_y (random_xj *. a' +. b')};
              }
         in
         gen_random_lines (new_line :: acc) (new_line :: lines) (bound + 1)
