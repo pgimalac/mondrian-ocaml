@@ -3,6 +3,9 @@ open Bsp
 
 let window_width = 600
 let window_height = 600
+                  
+let f_window_width = float_of_int window_width
+let f_window_height = float_of_int window_height
 
 exception Exit
                   
@@ -36,32 +39,6 @@ let set_color c =
   | None -> set_color black
   | Some Red -> set_color red
   | Some Blue -> set_color blue
-
-let center pts =
-  let l, sx, sy =
-    List.fold_left
-      (fun (l, sx, sy) pt -> l +. 1., pt.x +. sx, pt.y +. sy)
-      (0., 0., 0.) pts
-  in {x = sx /. l; y = sy /. l}
-              
-let compare_counter_clockwise center x y =
-  let f =
-    if (x.x -. center.x) *. (y.x -. center.x) >= 0.
-    then (x.x -. center.x) *. (x.y -. y.y)
-    else x.x -. y.x
-  in int_of_float f
-
-let edges =
-  let w = float_of_int window_width in
-  let h = float_of_int window_height in
-  let e1, e2, e3, e4 =
-    {x=0.; y=0.}, {x=w; y=0.}, {x=0.; y=h}, {x=w; y=h}
-  in [e1; e2; e3; e4], [
-      {pt1=e1;pt2=e2};
-      {pt1=e1;pt2=e3};
-      {pt1=e2;pt2=e4};
-      {pt1=e3;pt2=e4}
-    ] 
 
 let plot_bsp bsp =
   let rec aux bsp pts edges =
@@ -113,7 +90,7 @@ let plot_bsp bsp =
           Graphics.fill_poly poly;
           []
   in
-  let pts, lines = edges in
+  let pts, lines = edges f_window_width f_window_height in
   let lines = aux bsp pts lines in
   Graphics.set_line_width 2;
   List.iter (fun l -> 

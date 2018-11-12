@@ -3,18 +3,7 @@ open View
 open Graphics
    
 let main () =
-  let bsp = ref
-    (L (
-        {pt1 = {x=200.; y=0.}; pt2 = {x=200.;y=600.}},
-        R (None),
-        R (None)))
-  in
-  bsp :=
-    insert !bsp {pt1 = {x=200.;y=500.}; pt2 = {x=600.;y=550.}};
-  bsp :=
-    insert !bsp {pt1 = {x=0.;y=500.}; pt2 = {x=200.;y=200.}};
-  bsp :=
-    insert !bsp {pt1 = {x=600.;y=100.}; pt2 = {x=200.;y=200.}};
+  let bsp = ref (generate_random_bsp f_window_width f_window_height 5) in
   View.do_with_window
     ~on_open:(fun () -> View.plot_bsp !bsp)
     (fun e ->

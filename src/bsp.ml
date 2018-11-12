@@ -24,7 +24,7 @@ let is_right pt line =
   match coefs line with
   | None -> pt.x >= line.pt1.x
   | Some (a, b) -> a *. pt.x +. b >= pt.y
-                     
+
 let intersect l1 l2 =
   match coefs l1, coefs l2 with
   | None, None ->
@@ -44,8 +44,32 @@ let intersect l1 l2 =
        let x = (b' -. b) /. (a -. a') in
        let y = a *. x +. b in
        Some {x=x; y=y}
-     
-  
+       
+let center pts =
+  let l, sx, sy =
+    List.fold_left
+      (fun (l, sx, sy) pt -> l +. 1., pt.x +. sx, pt.y +. sy)
+      (0., 0., 0.) pts
+  in {x = sx /. l; y = sy /. l}
+              
+let compare_counter_clockwise center x y =
+  let f =
+    if (x.x -. center.x) *. (y.x -. center.x) >= 0.
+    then (x.x -. center.x) *. (x.y -. y.y)
+    else x.x -. y.x
+  in int_of_float f
+
+let edges w h =
+  let e1, e2, e3, e4 =
+    {x=0.; y=0.}, {x=w; y=0.}, {x=0.; y=h}, {x=w; y=h}
+  in [e1; e2; e3; e4], [
+      {pt1=e1;pt2=e2};
+      {pt1=e1;pt2=e3};
+      {pt1=e2;pt2=e4};
+      {pt1=e3;pt2=e4}
+    ] 
+
+
 let rec insert bsp line =
   match bsp with
   | L (l, left, right) ->
@@ -62,7 +86,7 @@ let rec insert bsp line =
                   pt.y <= max l.pt1.y l.pt2.y
           then
             begin
-              let ptl, ptr = 
+              let ptl, ptr =
                 if line.pt1.x <= pt.x
                 then line.pt1, line.pt2
                 else line.pt2, line.pt1
@@ -77,7 +101,7 @@ let rec insert bsp line =
               then L (l, insert left linel, right)
               else L (l, insert left linel, insert right liner)
             end
-          else 
+          else
             if is_left line.pt1 l
             then L (l, insert left line, right)
             else L (l, left, insert right line)
@@ -99,3 +123,50 @@ let rec change_color bsp pt =
      | Some Red -> R (Some Blue)
      | Some Blue -> R (Some Red)
 
+let _ = Random.self_init ()
+                 
+let generate_random_bsp bound_x bound_y nb_line =
+  let nb_line = nb_line + 4 in
+  let rec gen_random_lines acc lines bound =
+    if bound >= nb_line
+    then acc
+    else
+      let i = Random.int bound in
+      let j = Random.int bound in
+      if i = j
+      then gen_random_lines acc lines bound
+      else
+        let d_i = List.nth lines i in
+        let d_j = List.nth lines j in
+        let new_line =
+          match coefs d_i, coefs d_j with
+          | None, None ->
+             {
+               pt1={x=d_i.pt1.x;y=Random.float bound_y};
+               pt2={x=d_j.pt1.x;y=Random.float bound_y}
+             }
+          | Some (a, b), None ->
+             let random_x = Random.float bound_x in
+             {
+               pt1={x=random_x;y=random_x *. a +. b};
+               pt2={x=d_i.pt2.x;y=Random.float bound_y}
+             }
+          | None, Some (a, b) ->
+             let random_x = Random.float bound_x in
+             {
+               pt1={x=d_i.pt1.x;y=Random.float bound_y};
+               pt2={x=random_x;y=random_x *. a +. b};
+             }
+          | Some (a, b), Some (a', b') ->
+             let random_xi = Random.float bound_x in
+             let random_xj = Random.float bound_x in
+             {
+               pt1={x=random_xi;y=random_xi *. a +. b};
+               pt2={x=random_xj;y=random_xj *. a' +. b'};
+             }
+        in
+        gen_random_lines (new_line :: acc) (new_line :: lines) (bound + 1)
+  in
+  let _, lines = edges bound_x bound_y in
+  let lines = gen_random_lines [] lines 4 in
+  List.fold_left insert (R None) lines

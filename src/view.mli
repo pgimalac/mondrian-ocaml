@@ -1,3 +1,9 @@
+val window_width : int
+val window_height : int
+
+val f_window_width : float
+val f_window_height : float
+
 val do_with_window:
   ?title:string ->
   ?width:int ->

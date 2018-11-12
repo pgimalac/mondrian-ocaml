@@ -16,3 +16,11 @@ val insert : bsp -> line -> bsp
 val intersect : line -> line -> point option
   
 val change_color : bsp -> point -> bsp
+
+val center : point list -> point
+
+val compare_counter_clockwise : point -> point -> point -> int
+
+val edges : float -> float -> (point list) * (line list)
+  
+val generate_random_bsp : float -> float -> int -> bsp
