@@ -1,6 +1,5 @@
 open Bsp
 open View
-open Graphics
    
 let main () =
   let bsp = ref (generate_random_bsp f_window_width f_window_height 5) in
