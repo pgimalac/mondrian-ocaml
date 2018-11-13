@@ -166,6 +166,7 @@ let generate_random_bsp bound_x bound_y nb_line =
     if bound >= nb_line
     then acc
     else
+      let in_bounds_y = in_bounds 0. bound_y in
       let i = Random.int bound in
       let j = Random.int bound in
       if i = j
