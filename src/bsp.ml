@@ -163,15 +163,14 @@ let _ = Random.self_init ()
 let generate_random_bsp bound_x bound_y nb_line =
   let nb_line = nb_line + 4 in
   let rec gen_random_lines acc lines bound =
-    if bound >= nb_line
-    then acc
-    else
-      let in_bounds_y = in_bounds 0. bound_y in
-      let i = Random.int bound in
-      let j = Random.int bound in
-      if i = j
-      then gen_random_lines acc lines bound
-      else
+     if bound >= nb_line
+     then acc
+     else
+       let i = Random.int bound in
+       let j = Random.int bound in
+       if i = j
+       then gen_random_lines acc lines bound
+       else
         let d_i = List.nth lines i in
         let d_j = List.nth lines j in
         let gen_dot_on_line line =
