@@ -2,7 +2,7 @@ open Bsp
 open View
 
 let main () =
-  let bsp = ref (generate_random_bsp f_window_width f_window_height 3) in
+  let bsp = ref (generate_random_bsp f_window_width f_window_height 1500) in
   View.do_with_window
     ~on_open:(fun () -> View.plot_bsp !bsp)
     (fun e ->

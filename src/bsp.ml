@@ -3,8 +3,6 @@ type point = { x : float; y : float; }
 type line = { pt1 : point; pt2 : point; }
 type bsp = R of color option | L of line * bsp * bsp
 
-let pi = 4.0 *. atan 1.0;;
-
 let coefs line =
   let dy = line.pt2.y -. line.pt1.y in
   let dx = line.pt2.x -. line.pt1.x in
@@ -85,6 +83,26 @@ let compare_counter_clockwise center x y =
      then 1
      else -1
 
+let area pts =
+  match pts with
+  | _ :: _ :: [] | _ :: [] | [] -> failwith "Not a polygone"
+  | pt1 :: pt2 :: pts ->
+     let barycenter = center pts in
+     let rec aux acc pt1 pt2 pts =
+       let scalar_product = pt1.x *. pt2.x +. pt1.y *. pt2.y in
+       let d1, d2 = dist pt1 barycenter, dist pt2 barycenter in
+       if scalar_product = 0.
+       then (d1 *. d2) /. 2.
+       else
+         let alpha = (d1 *. d2) /. scalar_product in
+         let h = d1 *. (sqrt (1. -. alpha *. alpha)) in
+         let triangle_area = ((dist pt1 pt2) *. h) /. 2. in
+         let acc = acc +. triangle_area in
+         match pts with
+         | [] -> acc
+         | pt3 :: tl -> aux acc pt2 pt3 tl
+     in aux 0. pt1 pt2 pts
+
 let edges w h =
   let e1, e2, e3, e4 =
     {x=0.; y=0.}, {x=w; y=0.}, {x=0.; y=h}, {x=w; y=h}
@@ -95,34 +113,61 @@ let edges w h =
       {pt1=e3;pt2=e4}
     ]
 
-let rec insert bsp line =
-  match bsp with
-  | L (l, left, right) ->
-     begin
-       match intersect line l with
-       | None ->
-          if is_left line.pt1 l
-          then L (l, insert left line, right)
-          else L (l, left, insert right line)
-       | Some(pt) ->
-          if dist pt line.pt1 > 2. && dist pt line.pt2 > 2. (* for debug purpose *)
-          (* on vérifie que l'intersection n'est pas à l'extrémité de line,
-          sinon l ne coupe pas la gauche et la droite mais seulement l'un des deux *)
-          then
-            let ptl, ptr =
-              if is_left line.pt1 l
-              then line.pt1, line.pt2
-              else line.pt2, line.pt1
-            in
-            let linel = {pt1 = pt; pt2 = ptl} in
-            let liner = {pt1 = pt; pt2 = ptr} in
-            L (l, insert left linel, insert right liner)
-          else
-            if is_left line.pt1 l && is_left line.pt2 l
-            then L (l, insert left line, right)
-            else L (l, left, insert right line)
-     end
-  | r -> L (line, r, r)
+let split_by_line l pts =
+  List.fold_left (fun (pts_l, pts_r) pt ->
+      if is_left pt l
+      then if is_right pt l
+           then pt :: pts_l, pt :: pts_r
+           else pt :: pts_l, pts_r
+      else pts_l, pt :: pts_r
+    ) ([l.pt1; l.pt2], [l.pt1; l.pt2]) pts
+
+let iter f bsp bound_x bound_y =
+  let rec find_polygone bsp pts =
+    match bsp with
+    | L (l, left, right) ->
+       let left_pts, right_pts = split_by_line l pts in
+       find_polygone left left_pts;
+       find_polygone right right_pts
+    | R c -> f c pts
+  in
+  let pts, lines = edges bound_x bound_y in
+  find_polygone bsp pts
+
+let rec insert bound_x bound_y bsp line =
+  let rec aux bsp line pts =
+    match bsp with
+    | L (l, left, right) ->
+       begin
+         let left_pts, right_pts = split_by_line l pts in
+         match intersect line l with
+         | None ->
+            if is_left line.pt1 l
+            then L (l, aux left line left_pts, right)
+            else L (l, left, aux right line right_pts)
+         | Some(pt) ->
+            if dist pt line.pt1 > 2. && dist pt line.pt2 > 2.
+            then
+              let ptl, ptr =
+                if is_left line.pt1 l
+                then line.pt1, line.pt2
+                else line.pt2, line.pt1
+              in
+              let linel = {pt1 = pt; pt2 = ptl} in
+              let liner = {pt1 = pt; pt2 = ptr} in
+              L (l, aux left linel left_pts, aux right liner right_pts)
+            else
+              if is_left line.pt1 l && is_left line.pt2 l
+              then L (l, aux left line left_pts, right)
+              else L (l, left, aux right line right_pts)
+       end
+    | r ->
+       if area pts >= 10000. (* some random min area value *)
+       then L (line, r, r)
+       else r
+  in
+  let pts, lines = edges bound_x bound_y in
+  aux bsp line pts
 
 let rec print_point pt =
   print_string ("("^(string_of_float pt.x)^","^(string_of_float pt.y)^")");
@@ -192,5 +237,5 @@ let generate_random_bsp bound_x bound_y nb_line =
   in
   let _, lines = edges bound_x bound_y in
   let lines = List.rev (gen_random_lines [] lines 4) in
-  let bsp = List.fold_left insert (R None) lines
+  let bsp = List.fold_left (insert bound_x bound_y) (R None) lines
   in bsp
