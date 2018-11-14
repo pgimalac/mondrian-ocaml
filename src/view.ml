@@ -8,7 +8,7 @@ let f_window_width = float_of_int window_width
 let f_window_height = float_of_int window_height
 
 exception Exit
-
+        
 let do_with_window
       ?(title=" Mondrian")
       ?(width=window_width)
@@ -16,14 +16,14 @@ let do_with_window
       ?(on_open=ignore)
       f =
   open_graph (" " ^
-             (string_of_int width) ^ "x" ^
-             (string_of_int height));
-
+                (string_of_int width) ^ "x" ^
+                  (string_of_int height));
+  
   set_window_title title;
-
+  
   on_open ();
   synchronize ();
-
+  
   try
     while true do
       let e = wait_next_event [Button_down; Key_pressed] in
@@ -33,13 +33,7 @@ let do_with_window
     done;
   with Exit -> ();
   close_graph ()
-
-let set_color c =
-  match c with
-  | None -> set_color black
-  | Some Red -> set_color red
-  | Some Blue -> set_color blue
-
+              
 let draw_line l =
   Graphics.set_line_width 5;
   Graphics.set_color white;
@@ -61,17 +55,14 @@ let rec draw_bsp_line bsp =
 let plot_bsp bsp =
   Bsp.iter
     (fun color pts ->
-      match color with
-      | None -> ()
-      | c ->
-         set_color c;
-         let barycenter = center pts in
-         let poly = Array.of_list pts in
-         Array.sort (compare_counter_clockwise barycenter) poly;
-         let poly =
-           Array.map
-             (fun pt -> int_of_float pt.x, int_of_float pt.y) poly
-         in Graphics.fill_poly poly)
+      set_color color;
+      let barycenter = center pts in
+      let poly = Array.of_list pts in
+      Array.sort (compare_counter_clockwise barycenter) poly;
+      let poly =
+        Array.map
+          (fun pt -> int_of_float pt.x, int_of_float pt.y) poly
+      in Graphics.fill_poly poly)
     bsp f_window_width f_window_height;
   draw_bsp_line bsp
 

@@ -1,7 +1,8 @@
-type color = Blue | Red
+open Graphics
+
 type point = { x : float; y : float; }
 type line = { pt1 : point; pt2 : point; }
-type bsp = R of color option | L of line * bsp * bsp
+type bsp = R of Graphics.color | L of line * bsp * bsp
 
 let coefs line =
   let dy = line.pt2.y -. line.pt1.y in
@@ -83,25 +84,17 @@ let compare_counter_clockwise center x y =
      then 1
      else -1
 
-let area pts =
+let area barycenter pts =
   match pts with
   | _ :: _ :: [] | _ :: [] | [] -> failwith "Not a polygone"
-  | pt1 :: pt2 :: pts ->
-     let barycenter = center pts in
-     let rec aux acc pt1 pt2 pts =
-       let scalar_product = pt1.x *. pt2.x +. pt1.y *. pt2.y in
-       let d1, d2 = dist pt1 barycenter, dist pt2 barycenter in
-       if scalar_product = 0.
-       then (d1 *. d2) /. 2.
-       else
-         let alpha = (d1 *. d2) /. scalar_product in
-         let h = d1 *. (sqrt (1. -. alpha *. alpha)) in
-         let triangle_area = ((dist pt1 pt2) *. h) /. 2. in
-         let acc = acc +. triangle_area in
-         match pts with
-         | [] -> acc
-         | pt3 :: tl -> aux acc pt2 pt3 tl
-     in aux 0. pt1 pt2 pts
+  | pt1 :: pts ->
+     let rec aux acc pts =
+       match pts with
+       | a :: b :: q ->
+          aux (acc +. a.x *. b.y -. a.y *. b.x) (b :: q)
+       | a :: [] -> a.x *. pt1.y -. a.y *. pt1.x +. acc
+       | [] -> failwith "not a polygone"
+     in aux 0. pts
 
 let edges w h =
   let e1, e2, e3, e4 =
@@ -162,7 +155,10 @@ let rec insert bound_x bound_y bsp line =
               else L (l, left, aux right line right_pts)
        end
     | r ->
-       if area pts >= 10000. (* some random min area value *)
+       let barycenter = center pts in
+       if area barycenter
+            (List.sort (compare_counter_clockwise barycenter) pts)
+          >= 50000. (* some random min area value *)
        then L (line, r, r)
        else r
   in
@@ -197,11 +193,14 @@ let rec change_color bsp pt =
        else left, change_color right pt
      in
      L (l, left, right)
-  | R c ->
-     match c with
-     | None -> R (Some Red)
-     | Some Red -> R (Some Blue)
-     | Some Blue -> R (Some Red)
+  | R r ->
+     if r = white
+     then R red
+     else if r = red
+     then R blue
+     else if r = blue
+     then R white
+     else failwith "not a valid color"
 
 let _ = Random.self_init ()
 
@@ -237,5 +236,5 @@ let generate_random_bsp bound_x bound_y nb_line =
   in
   let _, lines = edges bound_x bound_y in
   let lines = List.rev (gen_random_lines [] lines 4) in
-  let bsp = List.fold_left (insert bound_x bound_y) (R None) lines
+  let bsp = List.fold_left (insert bound_x bound_y) (R white) lines
   in bsp
