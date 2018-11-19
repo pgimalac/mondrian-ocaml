@@ -34,12 +34,6 @@ let do_with_window
   with Exit -> ();
   close_graph ()
 
-let set_color c =
-  match c with
-  | None -> set_color black
-  | Some Red -> set_color red
-  | Some Blue -> set_color blue
-
 let draw_line l =
   Graphics.set_line_width 5;
   Graphics.set_color white;
@@ -63,28 +57,19 @@ let plot_bsp bsp =
     match bsp with
     | L (l, left, right) ->
        let left_pts, right_pts =
-         List.fold_left (fun (pts_l, pts_r) pt ->
-             if is_left pt l
-             then if is_right pt l
-                  then pt :: pts_l, pt :: pts_r
-                  else pt :: pts_l, pts_r
-             else pts_l, pt :: pts_r
-           ) ([l.pt1; l.pt2], [l.pt1; l.pt2]) pts
+         separate_points l ([l.pt1; l.pt2], [l.pt1; l.pt2]) pts
        in
        fill_bsp left left_pts;
        fill_bsp right right_pts
     | R color ->
-       match color with
-       | None -> ()
-       | c ->
-          set_color c;
-          let barycenter = center pts in
-          let poly = Array.of_list pts in
-          Array.sort (compare_counter_clockwise barycenter) poly;
-          let poly =
-            Array.map
-              (fun pt -> int_of_float pt.x, int_of_float pt.y) poly
-          in Graphics.fill_poly poly
+       set_color color;
+       let barycenter = center pts in
+       let poly = Array.of_list pts in
+       Array.sort (compare_counter_clockwise barycenter) poly;
+       let poly =
+         Array.map
+           (fun pt -> int_of_float pt.x, int_of_float pt.y) poly
+       in Graphics.fill_poly poly
   in
   let pts, lines = edges f_window_width f_window_height in
   fill_bsp bsp pts;

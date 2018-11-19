@@ -1,9 +1,9 @@
-type color = Blue | Red
 type point = { x : float; y : float; }
 type line = { pt1 : point; pt2 : point; }
-type bsp = R of color option | L of line * bsp * bsp
+type bsp = R of Graphics.color | L of line * bsp * bsp
 
-let pi = 4.0 *. atan 1.0;;
+let pi = 4.0 *. atan 1.0
+let min_area = 10000.
 
 let coefs line =
   let dy = line.pt2.y -. line.pt1.y in
@@ -79,11 +79,27 @@ let find_angle p =
 let compare_counter_clockwise center x y =
   let xTheta = find_angle {x = x.x -. center.x ; y = x.y -. center.y}
   in let yTheta = find_angle {x = y.x -. center.x ; y = y.y -. center.y}
-  in if xTheta = yTheta
-     then 0
-     else if xTheta > yTheta
-     then 1
-     else -1
+  in compare xTheta yTheta
+
+let polygon_area v =
+  match v with
+  | [] | _ :: [] | _ :: _ :: [] -> 0.
+  | h :: q ->
+    let rec aux l =
+      match l with
+      | a :: b :: q -> a.x *. b.y -. a.y *. b.x +. aux (b :: q)
+      | [a] -> a.x *. h.y -. a.y *. h.x
+      | [] -> 0. (* to prevent warnings... *)
+    in aux v /. 2.
+
+let separate_points l =
+  List.fold_left (fun (pts_l, pts_r) pt ->
+               if is_left pt l
+               then if is_right pt l
+                    then pt :: pts_l, pt :: pts_r
+                    else pt :: pts_l, pts_r
+               else pts_l, pt :: pts_r
+             )
 
 let edges w h =
   let e1, e2, e3, e4 =
@@ -95,15 +111,16 @@ let edges w h =
       {pt1=e3;pt2=e4}
     ]
 
-let rec insert bsp line =
+let rec insert pts bsp line =
   match bsp with
   | L (l, left, right) ->
+     let left_points, right_points = separate_points l ([l.pt1; l.pt2], [l.pt1; l.pt2]) pts in
      begin
        match intersect line l with
        | None ->
           if is_left line.pt1 l
-          then L (l, insert left line, right)
-          else L (l, left, insert right line)
+          then L (l, insert left_points left line, right)
+          else L (l, left, insert right_points right line)
        | Some(pt) ->
           if dist pt line.pt1 > 2. && dist pt line.pt2 > 2. (* for debug purpose *)
           (* on vérifie que l'intersection n'est pas à l'extrémité de line,
@@ -116,13 +133,17 @@ let rec insert bsp line =
             in
             let linel = {pt1 = pt; pt2 = ptl} in
             let liner = {pt1 = pt; pt2 = ptr} in
-            L (l, insert left linel, insert right liner)
+            L (l, insert left_points left linel, insert right_points right liner)
           else
             if is_left line.pt1 l && is_left line.pt2 l
-            then L (l, insert left line, right)
-            else L (l, left, insert right line)
+            then L (l, insert left_points left line, right)
+            else L (l, left, insert right_points right line)
      end
-  | r -> L (line, r, r)
+  | r ->
+      let a = polygon_area (List.sort (compare_counter_clockwise (center pts)) pts) in
+      if a > min_area
+      then L (line, r, r)
+      else r
 
 let rec print_point pt =
   print_string ("("^(string_of_float pt.x)^","^(string_of_float pt.y)^")");
@@ -153,44 +174,53 @@ let rec change_color bsp pt =
      in
      L (l, left, right)
   | R c ->
-     match c with
-     | None -> R (Some Red)
-     | Some Red -> R (Some Blue)
-     | Some Blue -> R (Some Red)
+     if c = Graphics.white then R (Graphics.red)
+     else if c = Graphics.red then R (Graphics.blue)
+     else R (Graphics.white)
 
 let _ = Random.self_init ()
 
-let generate_random_bsp bound_x bound_y nb_line =
-  let nb_line = nb_line + 4 in
-  let rec gen_random_lines acc lines bound =
-     if bound >= nb_line
-     then acc
-     else
-       let i = Random.int bound in
-       let j = Random.int bound in
-       if i = j
-       then gen_random_lines acc lines bound
-       else
-        let d_i = List.nth lines i in
-        let d_j = List.nth lines j in
-        let gen_dot_on_line line =
-          match coefs line with
-          | None ->
-            {
-              x = line.pt1.x;
-              y = Random.float (abs_float (line.pt1.y -. line.pt2.y)) +. (min line.pt1.y line.pt2.y)
-            }
-          | Some (a, b) ->
-            let x = Random.float (abs_float (line.pt1.x -. line.pt2.x)) +. (min line.pt1.x line.pt2.x)
-            in {x = x; y = a *. x +. b}
-        in let new_line = {
-          pt1=gen_dot_on_line d_i;
-          pt2=gen_dot_on_line d_j
-        }
-        in
-        gen_random_lines (new_line :: acc) (new_line :: lines) (bound + 1)
-  in
-  let _, lines = edges bound_x bound_y in
-  let lines = List.rev (gen_random_lines [] lines 4) in
-  let bsp = List.fold_left insert (R None) lines
-  in bsp
+let gen_dot_on_line line =
+  let p = Random.float 1.
+  in {x = line.pt1.x +. p *. (line.pt2.x -. line.pt1.x); y = line.pt1.y +. p *. (line.pt2.y -. line.pt1.y)}
+
+let gen_random_lines ptsArr =
+  let length = Array.length ptsArr in
+  let i = Random.int length in
+  let j = Random.int (length - 1) in
+  let j = if i <= j then j + 1 else j in
+  let d_i = {pt1 = ptsArr.(i); pt2 = ptsArr.((i + 1) mod length)} in
+  let d_j = {pt1 = ptsArr.(j); pt2 = ptsArr.((j + 1) mod length)} in
+  {pt1 = gen_dot_on_line d_i ; pt2 = gen_dot_on_line d_j}
+
+let generate_random_bsp width height nb_lines maxDepth =
+  if maxDepth >= 0 && (2. ** (float_of_int maxDepth)) >= (float_of_int nb_lines /. 2.)
+  then R Graphics.white
+  else
+    let bsp = ref (R Graphics.white) in
+    let v, _ = edges width height in
+    let rec add_random_line localBsp pts localDepth =
+      if localDepth = 0
+      then localBsp
+      else
+        match localBsp with
+        | L (l, left, right) ->
+          let leftPts, rightPts = separate_points l ([l.pt1; l.pt2], [l.pt1; l.pt2]) pts
+          in if Random.float 1. < 0.5
+             then L(l, add_random_line left leftPts (localDepth - 1), right)
+             else L(l, left, add_random_line right rightPts (localDepth - 1))
+        | R c ->
+          let pts = List.sort (compare_counter_clockwise (center pts)) pts
+          in let ptsArr = Array.of_list pts
+          in let new_line = gen_random_lines ptsArr
+          in let left, right = separate_points new_line ([new_line.pt1; new_line.pt2], [new_line.pt1; new_line.pt2]) pts
+          (* we have to do that because the center changes *)
+          in let left = List.sort (compare_counter_clockwise (center left)) left
+          in let right = List.sort (compare_counter_clockwise (center right)) right
+          in if polygon_area left > min_area && polygon_area right > min_area
+             then L(new_line, R c, R c)
+             else localBsp
+    in for _ = 1 to nb_lines do
+      bsp := add_random_line !bsp v maxDepth
+    done;
+    !bsp
