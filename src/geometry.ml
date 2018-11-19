@@ -9,7 +9,6 @@ let draw_line color width l =
   moveto (int_of_float l.pt1.x) (int_of_float l.pt1.y);
   lineto (int_of_float l.pt2.x) (int_of_float l.pt2.y)
 
-
 let coefs line =
   let dy = line.pt2.y -. line.pt1.y in
   let dx = line.pt2.x -. line.pt1.x in
@@ -29,7 +28,6 @@ let is_right pt line =
   match coefs line with
   | None -> pt.x >= line.pt1.x
   | Some (a, b) -> a *. pt.x +. b <= pt.y
-
 
 let intersect_lines l1 l2 =
   match coefs l1, coefs l2 with
@@ -103,23 +101,18 @@ let find_angle p =
 let compare_counter_clockwise center x y =
   let xTheta = find_angle {x = x.x -. center.x ; y = x.y -. center.y}
   in let yTheta = find_angle {x = y.x -. center.x ; y = y.y -. center.y}
-  in if xTheta = yTheta
-     then 0
-     else if xTheta > yTheta
-     then 1
-     else -1
+  in compare xTheta yTheta
 
-let area pts =
-  match pts with
-  | _ :: _ :: [] | _ :: [] | [] -> failwith "Not a polygone"
-  | pt1 :: pts ->
-     let rec aux acc pts =
-       match pts with
-       | a :: b :: q ->
-          aux (acc +. a.x *. b.y -. a.y *. b.x) (b :: q)
-       | a :: [] -> a.x *. pt1.y -. a.y *. pt1.x +. acc
-       | [] -> failwith "not a polygone"
-     in aux 0. pts
+let polygon_area v =
+  match v with
+  | [] | _ :: [] | _ :: _ :: [] -> 0.
+  | h :: q ->
+    let rec aux l =
+      match l with
+      | a :: b :: q -> a.x *. b.y -. a.y *. b.x +. aux (b :: q)
+      | [a] -> a.x *. h.y -. a.y *. h.x
+      | [] -> 0. (* to prevent warnings... *)
+    in aux v /. 2.
 
 let edges w h =
   let e1, e2, e3, e4 =
@@ -130,6 +123,15 @@ let edges w h =
       {pt1=e2;pt2=e4};
       {pt1=e3;pt2=e4}
     ]
+
+let separate_points l =
+  List.fold_left
+    (fun (pts_l, pts_r) pt ->
+      if is_left pt l
+      then if is_right pt l
+           then pt :: pts_l, pt :: pts_r
+           else pt :: pts_l, pts_r
+      else pts_l, pt :: pts_r)
 
 let split_by_line l pts =
   List.fold_left (fun (pts_l, pts_r) pt ->
@@ -150,3 +152,16 @@ let rec print_line line =
   print_point line.pt2;
   print_string "\n";
   flush stdout
+
+let gen_dot_on_line line =
+  let p = Random.float 1.
+  in {x = line.pt1.x +. p *. (line.pt2.x -. line.pt1.x); y = line.pt1.y +. p *. (line.pt2.y -. line.pt1.y)}
+
+let gen_random_lines ptsArr =
+  let length = Array.length ptsArr in
+  let i = Random.int length in
+  let j = Random.int (length - 1) in
+  let j = if i <= j then j + 1 else j in
+  let d_i = {pt1 = ptsArr.(i); pt2 = ptsArr.((i + 1) mod length)} in
+  let d_j = {pt1 = ptsArr.(j); pt2 = ptsArr.((j + 1) mod length)} in
+  {pt1 = gen_dot_on_line d_i ; pt2 = gen_dot_on_line d_j}

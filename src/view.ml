@@ -9,7 +9,7 @@ let f_window_width = float_of_int window_width
 let f_window_height = float_of_int window_height
 
 exception Exit
-        
+
 let do_with_window
       ?(title=" Mondrian")
       ?(width=window_width)
@@ -19,12 +19,12 @@ let do_with_window
   open_graph (" " ^
                 (string_of_int width) ^ "x" ^
                   (string_of_int height));
-  
+
   set_window_title title;
-  
+
   on_open ();
   synchronize ();
-  
+
   try
     while true do
       let e = wait_next_event [Button_down; Key_pressed] in
@@ -46,5 +46,4 @@ let do_with_window
  *       in Graphics.fill_poly poly)
  *     bsp f_window_width f_window_height;
  *   B.iter_line draw_line bsp *)
-
 

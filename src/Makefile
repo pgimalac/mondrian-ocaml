@@ -21,3 +21,5 @@ $(NAME): $(OBJS)
 clean:
 	rm -f *.cm[iox] *~ .*~ #*#
 	rm -f $(NAME)
+
+re: clean all

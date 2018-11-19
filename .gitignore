@@ -1,3 +1,5 @@
 mondrian
 *.cmi
 *.cmo
+*.sublime-project
+*.sublime-workspace

@@ -15,5 +15,4 @@ module type Bsp_type = sig
 end
 
 module Bsp_extrem : Bsp_type
-
 module Bsp_classic : Bsp_type
