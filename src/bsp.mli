@@ -1,35 +1,19 @@
-type point = { x : float; y : float; }
-type line = { pt1 : point; pt2 : point; }
-type bsp = R of Graphics.color | L of line * bsp * bsp
+open Geometry
 
-val coefs : line -> (float * float) option
+module type Bsp_type = sig
 
-val is_left : point -> line -> bool
-
-val is_right : point -> line -> bool
-
-val iter : (Graphics.color -> point list -> unit) -> bsp -> float -> float -> unit
+  type bsp
   
-val insert : float -> float -> bsp -> line -> bsp
+  val change_color : bsp -> point -> bsp
 
-val intersect : line -> line -> point option
+  val generate_random_bsp : float -> float -> bsp
 
-val change_color : bsp -> point -> bsp
+  val iter_area : (Graphics.color -> point list -> unit) -> bsp -> float -> float -> unit
 
-val center : point list -> point
+  val iter_line : (line -> unit) -> bsp -> float -> float -> unit
 
-val compare_counter_clockwise : point -> point -> point -> int
+end
 
-val edges : float -> float -> (point list) * (line list)
+module Bsp_extrem : Bsp_type
 
-val generate_random_bsp : float -> float -> bsp
-
-val print_point : point -> unit
-
-val print_bsp : bsp -> unit
-
-val print_line : line -> unit
-
-val find_angle : point -> float
-
-val dist : point -> point -> float
+module Bsp_classic : Bsp_type

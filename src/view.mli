@@ -12,5 +12,5 @@ val do_with_window:
   (Graphics.status -> unit) ->
   unit
 
-val plot_bsp: Bsp.bsp -> unit
+(* val plot_bsp: (module Bsp.Bsp_type with type bsp = 'a) -> 'a -> unit *)
     
