@@ -8,7 +8,7 @@ val is_left : point -> line -> bool
 
 val is_right : point -> line -> bool
 
-val iter : (Graphics.color -> point list -> 'a) -> bsp -> float -> float -> 'a
+val iter : (Graphics.color -> point list -> unit) -> bsp -> float -> float -> unit
   
 val insert : float -> float -> bsp -> line -> bsp
 
@@ -22,7 +22,7 @@ val compare_counter_clockwise : point -> point -> point -> int
 
 val edges : float -> float -> (point list) * (line list)
 
-val generate_random_bsp : float -> float -> int -> bsp
+val generate_random_bsp : float -> float -> bsp
 
 val print_point : point -> unit
 
