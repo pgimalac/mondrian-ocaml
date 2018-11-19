@@ -16,8 +16,8 @@ let do_with_window
       ?(on_open=ignore)
       f =
   open_graph (" " ^
-             (string_of_int width) ^ "x" ^
-             (string_of_int height));
+                (string_of_int width) ^ "x" ^
+                  (string_of_int height));
 
   set_window_title title;
 
@@ -53,27 +53,17 @@ let rec draw_bsp_line bsp =
   | R color -> ()
 
 let plot_bsp bsp =
-  let rec fill_bsp bsp pts =
-    match bsp with
-    | L (l, left, right) ->
-       let left_pts, right_pts =
-         separate_points l ([l.pt1; l.pt2], [l.pt1; l.pt2]) pts
-       in
-       fill_bsp left left_pts;
-       fill_bsp right right_pts
-    | R color ->
-       set_color color;
-       let barycenter = center pts in
-       let poly = Array.of_list pts in
-       Array.sort (compare_counter_clockwise barycenter) poly;
-       let poly =
-         Array.map
-           (fun pt -> int_of_float pt.x, int_of_float pt.y) poly
-       in Graphics.fill_poly poly
-  in
-  let pts, lines = edges f_window_width f_window_height in
-  fill_bsp bsp pts;
+  Bsp.iter
+    (fun color pts ->
+      set_color color;
+      let barycenter = center pts in
+      let poly = Array.of_list pts in
+      Array.sort (compare_counter_clockwise barycenter) poly;
+      let poly =
+        Array.map
+          (fun pt -> int_of_float pt.x, int_of_float pt.y) poly
+      in Graphics.fill_poly poly)
+    bsp f_window_width f_window_height;
   draw_bsp_line bsp;
-  List.iter draw_line lines
-
-
+  let _, e = edges f_window_width f_window_height
+  in List.iter draw_line e
