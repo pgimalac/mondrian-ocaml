@@ -12,5 +12,16 @@ val do_with_window:
   (Graphics.status -> unit) ->
   unit
 
-(* val plot_bsp: (module Bsp.Bsp_type with type bsp = 'a) -> 'a -> unit *)
+type game_mode = Classic | Extrem
+  
+val menu : Graphics.status option -> game_mode option
+
+module Make :
+functor (B : Bsp.Bsp_type) -> sig
+
+  val plot : unit -> unit
+  
+  val view : unit -> Graphics.status -> unit
+
+end
     

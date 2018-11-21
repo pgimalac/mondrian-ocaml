@@ -179,7 +179,7 @@ end
 module Bsp_classic : Bsp_type = struct
   type bsp = L of float * bsp * bsp | R of Graphics.color
 
-  let change_color bsp pt = 
+  let change_color bsp pt =
     let rec change_color_depth bsp pt depth =
       match bsp with
       | L (v, left, right) ->
@@ -199,6 +199,7 @@ module Bsp_classic : Bsp_type = struct
          then R white
          else failwith "not a valid color"      
     in
+    print_endline "change color";
     change_color_depth bsp pt 0
 
   exception ToSmallArea
