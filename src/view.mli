@@ -16,12 +16,12 @@ type game_mode = Classic | Extrem
   
 val menu : Graphics.status option -> game_mode option
 
-module Make :
-functor (B : Bsp.Bsp_type) -> sig
+module type Bsp_view = sig
 
   val plot : unit -> unit
   
   val view : unit -> Graphics.status -> unit
 
 end
-    
+
+module Make : functor (B : Bsp.Bsp_type) -> Bsp_view

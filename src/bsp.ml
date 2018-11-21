@@ -199,7 +199,6 @@ module Bsp_classic : Bsp_type = struct
          then R white
          else failwith "not a valid color"      
     in
-    print_endline "change color";
     change_color_depth bsp pt 0
 
   exception ToSmallArea

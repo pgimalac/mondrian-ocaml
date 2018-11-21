@@ -30,7 +30,6 @@ let do_with_window
       let e = wait_next_event [Button_down; Key_pressed] in
       if e.keypressed && e.key = 'q' then raise Exit;
       f e;
-      synchronize ();
     done;
   with Exit -> ();
   close_graph ()
@@ -84,12 +83,19 @@ let menu st =
   | _ -> print_menu;
         None
 
-module Make (B : Bsp_type) = struct
+module type Bsp_view = sig
+  
+  val plot : unit -> unit
+  
+  val view : unit -> Graphics.status -> unit
+
+end
+        
+module Make (B : Bsp_type) : Bsp_view = struct
 
   let bsp = ref None
   
   let plot_bsp bsp =
-    print_endline "plot";
     B.iter_area
       (fun color pts ->
         set_color color;
@@ -114,11 +120,12 @@ module Make (B : Bsp_type) = struct
       | Some b ->
          if e.button
          then begin
-             bsp := Some (B.change_color b {
-                              x = float_of_int e.mouse_x;
-                              y = float_of_int e.mouse_y});
-           end;
-         plot_bsp b
+             let b = B.change_color b {
+                         x = float_of_int e.mouse_x;
+                         y = float_of_int e.mouse_y} in
+             bsp := Some b;
+             plot_bsp b
+           end
     in handler
 
 end
