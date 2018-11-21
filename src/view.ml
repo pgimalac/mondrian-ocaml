@@ -27,7 +27,7 @@ let do_with_window
 
   try
     while true do
-      let e = wait_next_event [Button_down; Key_pressed] in
+      let e = wait_next_event [Button_down; Key_pressed; Mouse_motion] in
       if e.keypressed && e.key = 'q' then raise Exit;
       f e;
     done;
@@ -46,8 +46,11 @@ let print_btn ?(color_bkg=green) ?(color_fg=white) btn =
   let x, y = int_of_float btn.pt.x, int_of_float btn.pt.y in
   set_color color_bkg;
   fill_rect x y btn.w btn.h;
+
   set_color color_fg;
-  moveto x y;
+  let w, h = text_size btn.text in
+  moveto ((int_of_float btn.pt.x) + (btn.w - w) / 2)
+    ((int_of_float btn.pt.y) + (btn.h - h) / 2);
   draw_string btn.text;
   ()
 
@@ -57,8 +60,13 @@ let is_click b st =
     st.mouse_y >= by && st.mouse_y <= by + b.h
   
 type game_mode = Classic | Extrem
-  
+
 let menu st =
+  let title = "Mondrian" in
+  let w, h = text_size title in
+  let x_title = (window_width / 2) - w / 2 in
+  let y_title = 450 in
+
   let btn_classic = {
       text = "Classic mode";
       pt = {x = 150.;y = 325.};
@@ -69,9 +77,18 @@ let menu st =
       pt = {x = 150.;y = 200.};
       w = 250;
       h = 75} in
-  let print_menu =
-    print_btn btn_classic;
-    print_btn btn_extrem;
+  let print_menu ?(classic=false) ?(extrem=false) () =
+    set_color black;
+    moveto x_title y_title;
+    draw_string title;
+
+    if classic
+    then print_btn ~color_bkg:red btn_classic
+    else print_btn btn_classic;
+
+    if extrem
+    then print_btn ~color_bkg:red btn_extrem
+    else print_btn btn_extrem;
   in
   match st with
   | Some st when st.button ->
@@ -80,8 +97,15 @@ let menu st =
      else if is_click btn_extrem st
      then Some Extrem
      else None
-  | _ -> print_menu;
-        None
+  | Some st when is_click btn_classic st ->
+     print_menu ~classic:true ();
+     None
+  | Some st when is_click btn_extrem st ->
+     print_menu ~extrem:true ();
+     None
+  | _ ->
+     print_menu ();
+     None
 
 module type Bsp_view = sig
   
