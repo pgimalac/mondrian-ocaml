@@ -1,11 +1,12 @@
 open Graphics
 open Bsp
+open Ratio
 
 let window_width = 600
 let window_height = 600
 
-let f_window_width = float_of_int window_width
-let f_window_height = float_of_int window_height
+let f_window_width = ratio_of_int window_width
+let f_window_height = ratio_of_int window_height
 
 exception Exit
 
@@ -37,12 +38,12 @@ let do_with_window
 let draw_line l =
   Graphics.set_line_width 5;
   Graphics.set_color white;
-  moveto (int_of_float l.pt1.x) (int_of_float l.pt1.y);
-  lineto (int_of_float l.pt2.x) (int_of_float l.pt2.y);
+  moveto (int_of_ratio l.pt1.x) (int_of_ratio l.pt1.y);
+  lineto (int_of_ratio l.pt2.x) (int_of_ratio l.pt2.y);
   Graphics.set_line_width 3;
   Graphics.set_color black;
-  moveto (int_of_float l.pt1.x) (int_of_float l.pt1.y);
-  lineto (int_of_float l.pt2.x) (int_of_float l.pt2.y)
+  moveto (int_of_ratio l.pt1.x) (int_of_ratio l.pt1.y);
+  lineto (int_of_ratio l.pt2.x) (int_of_ratio l.pt2.y)
 
 let rec draw_bsp_line bsp =
   match bsp with
@@ -59,9 +60,11 @@ let plot_bsp bsp =
       let barycenter = center pts in
       let poly = Array.of_list pts in
       Array.sort (compare_counter_clockwise barycenter) poly;
+      Array.iter print_point poly;
+      print_endline "";
       let poly =
         Array.map
-          (fun pt -> int_of_float pt.x, int_of_float pt.y) poly
+          (fun pt -> int_of_ratio pt.x, int_of_ratio pt.y) poly
       in Graphics.fill_poly poly)
     bsp f_window_width f_window_height;
   draw_bsp_line bsp;

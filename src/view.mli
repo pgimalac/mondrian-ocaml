@@ -1,8 +1,10 @@
+open Ratio
+
 val window_width : int
 val window_height : int
 
-val f_window_width : float
-val f_window_height : float
+val f_window_width : ratio
+val f_window_height : ratio
 
 val do_with_window:
   ?title:string ->
@@ -13,4 +15,4 @@ val do_with_window:
   unit
 
 val plot_bsp: Bsp.bsp -> unit
-    
+

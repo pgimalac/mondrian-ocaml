@@ -1,18 +1,20 @@
-type point = { x : float; y : float; }
+open Ratio
+
+type point = { x : ratio; y : ratio; }
 type line = { pt1 : point; pt2 : point; }
 type bsp = R of Graphics.color | L of line * bsp * bsp
 
 val min_area : float
 
-val coefs : line -> (float * float) option
+val coefs : line -> (ratio * ratio) option
 
 val is_left : point -> line -> bool
 
 val is_right : point -> line -> bool
 
-val iter : (Graphics.color -> point list -> unit) -> bsp -> float -> float -> unit
+val iter : (Graphics.color -> point list -> unit) -> bsp -> ratio -> ratio -> unit
 
-val insert : float -> float -> bsp -> line -> bsp
+val insert : ratio -> ratio -> bsp -> line -> bsp
 
 val intersect : line -> line -> point option
 
@@ -22,11 +24,11 @@ val center : point list -> point
 
 val compare_counter_clockwise : point -> point -> point -> int
 
-val edges : float -> float -> (point list) * (line list)
+val edges : ratio -> ratio -> (point list) * (line list)
 
-val generate_random_bsp : float -> float -> int -> int -> bsp
+val generate_random_bsp : ratio -> ratio -> int -> int -> bsp
 
-val generate_random_bsp_maxime_dont_work : float -> float -> bsp
+val generate_random_bsp_maxime_dont_work : ratio -> ratio -> bsp
 
 val print_point : point -> unit
 

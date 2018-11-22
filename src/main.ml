@@ -8,8 +8,9 @@ let main () =
     (fun e ->
       if e.button && window_width > e.mouse_x && e.mouse_y < window_height
       then bsp := change_color !bsp {
-               x=float_of_int e.mouse_x;
-               y=float_of_int e.mouse_y};
+                   x = Ratio.ratio_of_int e.mouse_x;
+                   y = Ratio.ratio_of_int e.mouse_y;
+               };
 
       View.plot_bsp !bsp)
 
