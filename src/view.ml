@@ -41,7 +41,7 @@ type button =
     w    : int;
     h    : int;
   }
-  
+
 let print_btn ?(color_bkg=green) ?(color_fg=white) btn =
   let x, y = int_of_float btn.pt.x, int_of_float btn.pt.y in
   set_color color_bkg;
@@ -58,7 +58,7 @@ let is_click b st =
   let bx, by = int_of_float b.pt.x, int_of_float b.pt.y in
   st.mouse_x >= bx && st.mouse_x <= bx + b.w &&
     st.mouse_y >= by && st.mouse_y <= by + b.h
-  
+
 type game_mode = Classic | Extrem
 
 let menu st =
@@ -108,17 +108,17 @@ let menu st =
      None
 
 module type Bsp_view = sig
-  
+
   val plot : unit -> unit
-  
+
   val view : unit -> Graphics.status -> unit
 
 end
-        
+
 module Make (B : Bsp_type) : Bsp_view = struct
 
   let bsp = ref None
-  
+
   let plot_bsp bsp =
     B.iter_area
       (fun color pts ->
@@ -129,13 +129,15 @@ module Make (B : Bsp_type) : Bsp_view = struct
         in fill_poly poly)
       bsp f_window_width f_window_height;
     B.iter_line (draw_line white 5) bsp f_window_width f_window_height;
-    B.iter_line (draw_line black 3) bsp f_window_width f_window_height
+    B.iter_line (draw_line black 3) bsp f_window_width f_window_height;
+    let _, e = edges f_window_width f_window_height in
+    List.iter (fun x -> draw_line white 5 x; draw_line black 3 x) e
 
   let plot () =
     match !bsp with
     | None -> failwith "No bsp"
     | Some b -> plot_bsp b
-    
+
   let view () =
     bsp := Some (B.generate_random_bsp f_window_width f_window_height);
     let handler e =

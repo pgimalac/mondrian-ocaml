@@ -13,13 +13,13 @@ val do_with_window:
   unit
 
 type game_mode = Classic | Extrem
-  
+
 val menu : Graphics.status option -> game_mode option
 
 module type Bsp_view = sig
 
   val plot : unit -> unit
-  
+
   val view : unit -> Graphics.status -> unit
 
 end
