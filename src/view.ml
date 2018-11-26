@@ -117,7 +117,7 @@ end
 
 module Make (B : Bsp_type) : Bsp_view = struct
 
-  let bsp = ref None
+  let bsp = ref (B.generate_random_bsp f_window_width f_window_height)
 
   let plot_bsp bsp =
     B.iter_area
@@ -133,25 +133,17 @@ module Make (B : Bsp_type) : Bsp_view = struct
     let _, e = edges f_window_width f_window_height in
     List.iter (fun x -> draw_line white 5 x; draw_line black 3 x) e
 
-  let plot () =
-    match !bsp with
-    | None -> failwith "No bsp"
-    | Some b -> plot_bsp b
+  let plot () = plot_bsp !bsp
 
   let view () =
-    bsp := Some (B.generate_random_bsp f_window_width f_window_height);
     let handler e =
-      match !bsp with
-      | None -> failwith "No bsp"
-      | Some b ->
-         if e.button
-         then begin
-             let b = B.change_color b {
-                         x = float_of_int e.mouse_x;
-                         y = float_of_int e.mouse_y} in
-             bsp := Some b;
-             plot_bsp b
-           end
+      if e.button
+      then begin
+          bsp := B.change_color !bsp {
+                     x = float_of_int e.mouse_x;
+                     y = float_of_int e.mouse_y};
+          plot_bsp !bsp
+        end
     in handler
 
 end
