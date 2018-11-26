@@ -4,7 +4,7 @@ open Geometry
 module type Bsp_type = sig
 
   type bsp
-     
+
   val change_color : bsp -> point -> bsp
 
   val generate_random_bsp : float -> float -> bsp
@@ -19,7 +19,7 @@ let _ = Random.self_init ()
 
 module Bsp_extrem : Bsp_type = struct
   let min_area = 10000.
-               
+
   type bsp = R of Graphics.color | L of line * bsp * bsp
 
   let rec insert bound_x bound_y bsp line =
@@ -104,7 +104,7 @@ module Bsp_extrem : Bsp_type = struct
                            then L(new_line, R c, R c)
                            else localBsp
 
-    
+
   and gen_random_bsp width height nb_lines maxDepth =
     if maxDepth >= 0 && (2. ** (float_of_int maxDepth)) >= (float_of_int nb_lines /. 2.)
     then R Graphics.white
@@ -161,7 +161,7 @@ module Bsp_extrem : Bsp_type = struct
          if polygon_area left > min_area && polygon_area right > min_area
          then L(new_line, R c, R c)
          else localBsp
-         
+
   and gen_random_bsp width height nb_lines maxDepth =
     if maxDepth >= 0 && (2. ** (float_of_int maxDepth)) >= (float_of_int nb_lines /. 2.)
     then R Graphics.white
@@ -197,14 +197,14 @@ module Bsp_classic : Bsp_type = struct
          then R blue
          else if r = blue
          then R white
-         else failwith "not a valid color"      
+         else failwith "not a valid color"
     in
     change_color_depth bsp pt 0
 
   exception ToSmallArea
   let min_area = 50.
   let area_range = min_area /. 5.
-    
+
   let generate_random_bsp bound_x bound_y =
     let rec gen_while max min =
       let i = (Random.float (max -. min)) +. min in
@@ -216,7 +216,7 @@ module Bsp_classic : Bsp_type = struct
       then raise ToSmallArea
       else gen_while max min
     and generate_random_bsp_depth pt1 pt2 depth =
-      try 
+      try
         if depth mod 2 = 0
         then let x = gen_rand pt2.x pt1.x in
              L (x,
