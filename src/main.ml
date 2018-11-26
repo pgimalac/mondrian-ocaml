@@ -1,10 +1,8 @@
-open Geometry
 open Bsp
 open View
-open Graphics
 
 let rec handler = ref select_mode
-                
+
 and select_mode st =
   match menu (Some st) with
   | None -> ()

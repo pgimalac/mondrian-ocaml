@@ -5,7 +5,7 @@ module type Bsp_type = sig
 
   type bsp
 
-  val change_color : bsp -> point -> bsp
+  val change_color : ?reverse:bool -> bsp -> point -> bsp
 
   val generate_random_bsp : float -> float -> bsp
 
@@ -13,10 +13,28 @@ module type Bsp_type = sig
 
   val iter_line : (line -> unit) -> bsp -> float -> float -> unit
 
+  val clean : bsp -> bsp
+    
 end
 
 let _ = Random.self_init ()
 
+let colors = [white; red; blue]
+let next_color reverse c =
+  let rec aux tab = 
+    match tab with
+    | hd1 :: hd2 :: tl when hd1 = c -> hd2
+    | hd :: [] when hd = c -> List.hd colors
+    | hd :: tl -> aux tl
+    | [] -> aux colors
+  in
+  let rec aux_r tab = 
+    match tab with
+    | hd1 :: hd2 :: tl when hd2 = c -> hd1
+    | hd :: tl -> aux_r tl
+    | [] -> List.nth colors ((List.length colors) - 1)
+  in (if reverse then aux_r else aux) colors
+      
 module Bsp_extrem : Bsp_type = struct
   let min_area = 10000.
 
@@ -123,20 +141,16 @@ module Bsp_extrem : Bsp_type = struct
        iter_line f right bound_x bound_y
     | R color -> ()
 
-  let rec change_color bsp pt =
+  let rec change_color ?(reverse=false) bsp pt =
     match bsp with
     | L (l, left, right) ->
        let left, right =
          if is_left pt l
-         then change_color left pt, right
-         else left, change_color right pt
+         then change_color ~reverse:reverse left pt, right
+         else left, change_color ~reverse:reverse right pt
        in
        L (l, left, right)
-    | R c ->
-       if c = Graphics.white then R Graphics.red
-       else if c = Graphics.red then R Graphics.blue
-       else if c = Graphics.blue then R Graphics.white
-       else failwith "not a valid color"
+    | R c -> R (next_color reverse c)
 
   let rec add_random_line localBsp pts localDepth =
     if localDepth = 0
@@ -174,12 +188,18 @@ module Bsp_extrem : Bsp_type = struct
       !bsp
 
   let generate_random_bsp width height = gen_random_bsp width height 100 (-1)
+
+  let rec clean bsp =
+    match bsp with
+    | L (l, left, right) ->
+       L (l, clean left, clean right)
+    | R _ -> R white
 end
 
 module Bsp_classic : Bsp_type = struct
   type bsp = L of float * bsp * bsp | R of Graphics.color
 
-  let change_color bsp pt =
+  let change_color ?(reverse=false) bsp pt =
     let rec change_color_depth bsp pt depth =
       match bsp with
       | L (v, left, right) ->
@@ -190,14 +210,7 @@ module Bsp_classic : Bsp_type = struct
          if is_left
          then L(v, change_color_depth left pt (depth + 1), right)
          else L(v, left, change_color_depth right pt (depth + 1))
-      | R r ->
-         if r = white
-         then R red
-         else if r = red
-         then R blue
-         else if r = blue
-         then R white
-         else failwith "not a valid color"
+      | R r -> R (next_color reverse r)
     in
     change_color_depth bsp pt 0
 
@@ -266,4 +279,10 @@ module Bsp_classic : Bsp_type = struct
       | R color -> ()
     in
     iter_line_depth f bsp {x = 0.; y = 0.} {x = bound_x; y = bound_y} 0
+
+  let rec clean bsp =
+    match bsp with
+    | L (f, left, right) ->
+       L (f, clean left, clean right)
+    | R _ -> R white
 end
