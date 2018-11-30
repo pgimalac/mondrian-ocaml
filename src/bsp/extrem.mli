@@ -1,3 +1,4 @@
-open Bsp
+(** Implementation of the Bsp_complete 
+    module for the extrem mode *)
 
-module Bsp : Bsp_complete
+module Bsp : Bsp.Bsp_complete

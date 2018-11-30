@@ -5,7 +5,7 @@ module type Bsp_type = sig
 
   type bsp
 
-  val change_color : bool -> bsp -> point -> bsp
+  val change_color : ?reverse:bool -> bsp -> point -> bsp
 
   val generate_random_bsp : float -> float -> bsp
 
@@ -19,23 +19,19 @@ end
 
 module type Bsp_complete = sig
 
-  type bsp
-     
+  include Bsp_type
+
   val iter_area : (Graphics.color -> point list -> unit) -> bsp -> float -> float -> unit
 
   val iter_line : (line -> unit) -> bsp -> float -> float -> unit
 
   val clean : float -> float -> bsp -> bsp
 
-  val change_color : ?reverse:bool -> bsp -> point -> bsp
-
-  val generate_random_bsp : float -> float -> bsp
-
 end
                      
 module Make (B : Bsp_type) = struct
 
-  type bsp = B.bsp
+  include B
   
   let iter_area f bsp bound_x bound_y =
     B.fold bound_x bound_y (fun _ _ _ -> ()) f bsp
@@ -48,9 +44,7 @@ module Make (B : Bsp_type) = struct
       B.node
       (fun c _ -> B.region white)
       bsp
-
-  let change_color ?(reverse=false) bsp pt = B.change_color reverse bsp pt
-
+                                           
   let generate_random_bsp bound_x bound_y = B.generate_random_bsp bound_x bound_y
     
 end

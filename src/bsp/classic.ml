@@ -5,7 +5,7 @@ open Bsp
 module Bsp_classic : Bsp_type = struct
   type bsp = L of float * bsp * bsp | R of Graphics.color
 
-  let change_color reverse bsp pt =
+  let change_color ?(reverse=false) bsp pt =
     let rec change_color_depth bsp pt depth =
       match bsp with
       | L (v, left, right) ->

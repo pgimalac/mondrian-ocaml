@@ -1,38 +1,67 @@
-open Graphics
-open Geometry
+(** 
+ * File containting generic Bsp interface 
+ *)
 
+(**
+ * Module to implement a bsp 
+ *)
 module type Bsp_type = sig
 
+  (** abstract over the bsp's implementation *)
   type bsp
-  
-  val change_color : bool -> bsp -> point -> bsp
 
+  (** 
+   * change the color of the area containing the given point
+   * if reverse is specified to true, the color is change following
+   * the reversed order, used to cancel an action *)
+  val change_color : ?reverse:bool -> bsp -> Geometry.point -> bsp
+
+  (** Generate a complete random bsp *)
   val generate_random_bsp : float -> float -> bsp
 
-  val region : color -> bsp
+  (** Constructor for a leaf of the bsp *)
+  val region : Graphics.color -> bsp
 
-  val node : line -> bsp -> bsp -> bsp
-    
-  val fold : float -> float -> (line -> 'a -> 'a -> 'a) -> (color -> point list -> 'a) -> bsp -> 'a
+  (** Constructor for a node of the bsp *)
+  val node : Geometry.line -> bsp -> bsp -> bsp
+
+  (** theses two functions are used to define generic 
+      function un Bsp_complete *)
+
+  (** apply a function on a bsp
+      the first function create a value from the value returned
+      by the left and right node, the second function return a value
+      for a given area (based on it color and polygon) *)
+  val fold : float -> float ->
+             (Geometry.line -> 'a -> 'a -> 'a) ->
+             (Graphics.color -> Geometry.point list -> 'a) ->
+             bsp -> 'a
 
 end
 
+(** 
+ * More generic module 
+ * aim to facotize code 
+ *)
 module type Bsp_complete = sig
 
-  type bsp
-     
-  val iter_area : (Graphics.color -> point list -> unit) -> bsp -> float -> float -> unit
+  include Bsp_type
 
-  val iter_line : (line -> unit) -> bsp -> float -> float -> unit
+  (** apply a function on each areas *)
+  val iter_area : (Graphics.color -> Geometry.point list -> unit) ->
+                  bsp -> float -> float -> unit
 
+  (** apply a function on each line*)
+  val iter_line : (Geometry.line -> unit) ->
+                  bsp -> float -> float -> unit
+
+  (** clear all color (all areas are set to white) *)
   val clean : float -> float -> bsp -> bsp
-    
-  val change_color : ?reverse:bool -> bsp -> point -> bsp
-
-  val generate_random_bsp : float -> float -> bsp
 
 end
-                     
+
+(** Construct a complete bsp from the minimum implementation *)
 module Make : functor (B : Bsp_type) -> Bsp_complete
 
+(** iter through colors, in reversed order if the given boolean is true *)
 val next_color : bool -> Graphics.color -> Graphics.color

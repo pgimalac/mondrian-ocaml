@@ -73,13 +73,13 @@ module Bsp_extrem : Bsp_type = struct
       done;
       !bsp
 
-  let rec change_color reverse bsp pt =
+  let rec change_color ?(reverse=false) bsp pt =
     match bsp with
     | L (l, left, right) ->
        let left, right =
          if is_left pt l
-         then change_color reverse left pt, right
-         else left, change_color reverse right pt
+         then change_color ~reverse:reverse left pt, right
+         else left, change_color ~reverse:reverse right pt
        in
        L (l, left, right)
     | R c -> R (next_color reverse c)

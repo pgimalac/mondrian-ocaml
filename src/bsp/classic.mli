@@ -1,3 +1,4 @@
-open Bsp
+(** Implementation of the complete bsp module 
+    for the classic mode *)
 
-module Bsp :  Bsp_complete
+module Bsp : Bsp.Bsp_complete
