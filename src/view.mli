@@ -18,4 +18,4 @@ module type Bsp_view = sig
 
 end
 
-module Make : functor (B : Bsp.Bsp_type) -> Bsp_view
+module Make : functor (B : Bsp.Bsp_complete) -> Bsp_view

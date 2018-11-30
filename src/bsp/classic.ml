@@ -5,7 +5,7 @@ open Bsp
 module Bsp_classic : Bsp_type = struct
   type bsp = L of float * bsp * bsp | R of Graphics.color
 
-  let change_color ?(reverse=false) bsp pt =
+  let change_color reverse bsp pt =
     let rec change_color_depth bsp pt depth =
       match bsp with
       | L (v, left, right) ->
@@ -49,46 +49,34 @@ module Bsp_classic : Bsp_type = struct
     in
     generate_random_bsp_depth {x = 0.; y = 0.} {x = bound_x; y = bound_y} 0
 
-  let iter_area f bsp bound_x bound_y =
-    let rec iter_area_depth f bsp pt1 pt2 depth =
+  let region c = R c
+
+  let node line left right =
+    if line.pt1.x = line.pt2.x
+    then L(line.pt1.x, left, right)
+    else L(line.pt1.y, left, right)
+    
+  let fold bound_x bound_y f g bsp =
+    let rec fold_depth bsp pt1 pt2 depth =
       match bsp with
       | L (v, left, right) ->
-         if depth mod 2 = 0
-         then begin
-             iter_area_depth f left pt1 {x = v; y = pt2.y} (depth + 1);
-             iter_area_depth f right {x = v; y = pt1.y} pt2 (depth + 1)
-           end
-         else begin
-             iter_area_depth f left pt1 {x = pt2.x; y = v} (depth + 1);
-             iter_area_depth f right {x = pt1.x; y = v} pt2 (depth + 1)
-           end
+         let line, accl, accr =
+           if depth mod 2 = 0
+           then
+             {pt1 = {x = v; y = pt2.y}; pt2 = {x = v; y = pt1.y}},
+             fold_depth left pt1 {x = v; y = pt2.y} (depth + 1),
+             fold_depth right {x = v; y = pt1.y} pt2 (depth + 1)
+           else begin
+               {pt1 = {x = pt2.x; y = v}; pt2 = {x = pt1.x; y = v}},
+               fold_depth left pt1 {x = pt2.x; y = v} (depth + 1),
+               fold_depth right {x = pt1.x; y = v} pt2 (depth + 1)
+             end
+         in
+         f line accl accr
       | R color ->
-         f color [pt1; {x = pt2.x; y = pt1.y}; pt2; {x = pt1.x; y = pt2.y}]
+         g color [pt1; {x = pt2.x; y = pt1.y}; pt2; {x = pt1.x; y = pt2.y}]
     in
-    iter_area_depth f bsp {x = 0.; y = 0.} {x = bound_x; y = bound_y} 0
-
-  let iter_line f bsp bound_x bound_y =
-    let rec iter_line_depth f bsp pt1 pt2 depth =
-      match bsp with
-      | L (v, left, right) ->
-         if depth mod 2 = 0
-         then begin
-             f {pt1 = {x = v; y = pt1.y}; pt2 = {x = v; y= pt2.y}};
-             iter_line_depth f left pt1 {x = v; y = pt2.y} (depth + 1);
-             iter_line_depth f right {x = v; y = pt1.y} pt2 (depth + 1)
-           end
-         else begin
-             f {pt1 = {x = pt1.x; y = v}; pt2 = {x = pt2.x; y = v}};
-             iter_line_depth f left pt1 {x = pt2.x; y = v} (depth + 1);
-             iter_line_depth f right {x = pt1.x; y = v} pt2 (depth + 1)
-           end
-      | R color -> ()
-    in
-    iter_line_depth f bsp {x = 0.; y = 0.} {x = bound_x; y = bound_y} 0
-
-  let rec clean bsp =
-    match bsp with
-    | L (f, left, right) ->
-       L (f, clean left, clean right)
-    | R _ -> R white
+    fold_depth bsp {x = 0.; y = 0.} {x = bound_x; y = bound_y} 0
 end
+
+module Bsp = Bsp.Make (Bsp_classic)

@@ -7,54 +7,26 @@ module Bsp_extrem : Bsp_type = struct
 
   type bsp = R of Graphics.color | L of line * bsp * bsp
 
-  let rec insert bound_x bound_y bsp line =
-    let rec aux bsp line pts =
-      match bsp with
-      | L (l, left, right) ->
-         begin
-           let left_pts, right_pts = split_by_line l pts in
-           match intersect line l with
-           | None ->
-              if is_left line.pt1 l
-              then L (l, aux left line left_pts, right)
-              else L (l, left, aux right line right_pts)
-           | Some pt ->
-              if dist pt line.pt1 > 2. && dist pt line.pt2 > 2.
-              then
-                let ptl, ptr =
-                  if is_left line.pt1 l
-                  then line.pt1, line.pt2
-                  else line.pt2, line.pt1
-                in
-                let linel = {pt1 = pt; pt2 = ptl} in
-                let liner = {pt1 = pt; pt2 = ptr} in
-                L (l, aux left linel left_pts, aux right liner right_pts)
-              else
-                if is_left line.pt1 l && is_left line.pt2 l
-                then L (l, aux left line left_pts, right)
-                else L (l, left, aux right line right_pts)
-         end
-      | r -> L (line, r, r)
-    in
-    let pts, lines = edges bound_x bound_y in
-    aux bsp line pts
-
-  let iter_area f bsp bound_x bound_y =
-    let rec find_polygone bsp pts =
+  let fold bound_x bound_y f g bsp =
+    let rec aux bsp pts =
       match bsp with
       | L (l, left, right) ->
          let left_pts, right_pts = split_by_line l pts in
-         find_polygone left left_pts;
-         find_polygone right right_pts;
-         ()
+         let accl = aux left left_pts in
+         let accr = aux right right_pts in
+         f l accl accr
       | R c ->
          let barycenter = center pts in
          let pts = List.sort (compare_counter_clockwise barycenter) pts in
-         f c pts
+         g c pts
     in
     let pts, lines = edges bound_x bound_y in
-    find_polygone bsp pts
+    aux bsp pts
 
+  let region c = R c
+
+  let node line left right = L(line, left, right)
+    
   let gen_random_lines ptsArr =
     let length = Array.length ptsArr in
     let i = Random.int length in
@@ -100,21 +72,14 @@ module Bsp_extrem : Bsp_type = struct
         bsp := add_random_line !bsp v maxDepth
       done;
       !bsp
-  let rec iter_line f bsp bound_x bound_y =
-    match bsp with
-    | L (l, left, right) ->
-       f l;
-       iter_line f left bound_x bound_y;
-       iter_line f right bound_x bound_y
-    | R color -> ()
 
-  let rec change_color ?(reverse=false) bsp pt =
+  let rec change_color reverse bsp pt =
     match bsp with
     | L (l, left, right) ->
        let left, right =
          if is_left pt l
-         then change_color ~reverse:reverse left pt, right
-         else left, change_color ~reverse:reverse right pt
+         then change_color reverse left pt, right
+         else left, change_color reverse right pt
        in
        L (l, left, right)
     | R c -> R (next_color reverse c)
@@ -155,10 +120,6 @@ module Bsp_extrem : Bsp_type = struct
       !bsp
 
   let generate_random_bsp width height = gen_random_bsp width height 100 (-1)
-
-  let rec clean bsp =
-    match bsp with
-    | L (l, left, right) ->
-       L (l, clean left, clean right)
-    | R _ -> R white
 end
+
+module Bsp = Bsp.Make (Bsp_extrem)

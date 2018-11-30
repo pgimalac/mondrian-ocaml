@@ -131,7 +131,7 @@ module type Bsp_view = sig
 
 end
                      
-module Make (B : Bsp_type) : Bsp_view = struct
+module Make (B : Bsp_complete) : Bsp_view = struct
   
   let bsp = ref (B.generate_random_bsp board_width board_height)
   let history = ref []
@@ -155,7 +155,7 @@ module Make (B : Bsp_type) : Bsp_view = struct
     let quit_hdl () = raise Exit in
     let clean_hdl () =
       history := [];
-      bsp := B.clean !bsp in
+      bsp := B.clean board_width board_height !bsp in
     let cancel_hdl () =
       match !history with
       | [] ->
