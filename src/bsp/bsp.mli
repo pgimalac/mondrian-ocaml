@@ -16,5 +16,4 @@ module type Bsp_type = sig
 
 end
 
-module Bsp_extrem : Bsp_type
-module Bsp_classic : Bsp_type
+val next_color : bool -> Graphics.color -> Graphics.color

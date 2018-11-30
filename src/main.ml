@@ -1,4 +1,6 @@
 open Bsp
+open Classic
+open Extrem
 open View
 
 let rec handler = ref select_mode
