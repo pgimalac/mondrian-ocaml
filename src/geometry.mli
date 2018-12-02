@@ -19,3 +19,4 @@ val print_point : point -> unit
 val print_line : line -> unit
 val gen_dot_on_line : line -> point
 val gen_random_lines : point array -> line
+val is_on_line : line -> point -> bool

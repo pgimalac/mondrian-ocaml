@@ -124,6 +124,13 @@ let edges w h =
       {pt1=e3;pt2=e4}
     ]
 
+let is_on_line l pt =
+  let ptAux =
+    match coefs l with
+    | Some (a, b) -> { x = pt.x; y = a *. pt.x +. b}
+    | None -> { x = l.pt1.x; y = pt.y }
+  in dist pt ptAux < 2.
+
 let separate_points l =
   List.fold_left
     (fun (pts_l, pts_r) pt ->

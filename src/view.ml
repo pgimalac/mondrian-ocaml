@@ -128,8 +128,7 @@ module Make (B : Bsp_type) : Bsp_view = struct
             (fun pt -> int_of_float pt.x, int_of_float pt.y) (Array.of_list pts)
         in fill_poly poly)
       bsp f_window_width f_window_height;
-    B.iter_line (draw_line white 5) bsp f_window_width f_window_height;
-    B.iter_line (draw_line black 3) bsp f_window_width f_window_height;
+    B.iter_line (fun _ l c -> draw_line white 5 l; draw_line c 3 l) bsp f_window_width f_window_height;
     let _, e = edges f_window_width f_window_height in
     List.iter (fun x -> draw_line white 5 x; draw_line black 3 x) e
 
