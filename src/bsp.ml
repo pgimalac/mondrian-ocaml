@@ -5,7 +5,7 @@ module type Bsp_type = sig
 
   type bsp
 
-  val change_color : bsp -> point -> bsp
+  val change_color : ?reverse:bool -> bsp -> point -> bsp
 
   val generate_random_bsp : float -> float -> bsp
 
@@ -19,6 +19,8 @@ module type Bsp_type = sig
 
   val get_number_areas : bsp -> int
 
+  val clean : bsp -> bsp
+
 end
 
 let _ = Random.self_init ()
@@ -27,6 +29,23 @@ let random_color () =
   if Random.float 2. < 1.
   then blue
   else red
+
+let colors = [white; red; blue]
+let next_color reverse c =
+  let rec aux tab =
+    match tab with
+    | hd1 :: hd2 :: tl when hd1 = c -> hd2
+    | hd :: [] when hd = c -> List.hd colors
+    | hd :: tl -> aux tl
+    | [] -> aux colors
+  in
+  let rec aux_r tab =
+    match tab with
+    | hd1 :: hd2 :: tl when hd2 = c -> hd1
+    | hd :: tl -> aux_r tl
+    | [] -> List.nth colors ((List.length colors) - 1)
+  in (if reverse then aux_r else aux) colors
+
 
 module Bsp_extrem : Bsp_type = struct
   let min_area = 5000.
@@ -101,20 +120,16 @@ module Bsp_extrem : Bsp_type = struct
        iter_line f right bound_x bound_y
     | R _ -> ()
 
-  let rec change_color bsp pt =
+  let rec change_color ?(reverse=false) bsp pt =
     match bsp with
     | L (n, l, c, left, right) ->
        let left, right =
          if is_left pt l
-         then change_color left pt, right
-         else left, change_color right pt
+         then change_color ~reverse:reverse left pt, right
+         else left, change_color ~reverse:reverse right pt
        in
        L (n, l, c, left, right)
-    | R (n, c) ->
-       if c = white then R (n, red)
-       else if c = red then R (n, blue)
-       else if c = blue then R (n, white)
-       else failwith "not a valid color"
+    | R (n, c) -> R (n, next_color reverse c)
 
   let rec add_random_line localBsp pts localDepth =
     if localDepth = 0
@@ -178,6 +193,12 @@ module Bsp_extrem : Bsp_type = struct
             arr.(i) <- c, (color, n) :: li) pts
     in fillBsp bsp []; arr
 
+  let rec clean bsp =
+    match bsp with
+    | L (n, l, c, left, right) ->
+      L (n, l, c, clean left, clean right)
+    | R (n, _) -> R (n, white)
+
   let generate_random_bsp width height =
     let rec index bsp nbL nbA =
       match bsp with
@@ -196,7 +217,7 @@ module Bsp_extrem : Bsp_type = struct
         let c = if acc = 0 then green else if acc > 0 then red else blue in
         L (n, l, c, color_bsp left, color_bsp right)
       | a -> a
-    in color_bsp bsp
+    in clean (color_bsp bsp)
 
   let get_number_lines bsp =
     let rec getNbLines bsp i =
@@ -209,13 +230,12 @@ module Bsp_extrem : Bsp_type = struct
     match bsp with
     | L (_, _, _, _, r) -> get_number_areas r
     | R (n, _) -> n
-
 end
 
 module Bsp_classic : Bsp_type = struct
   type bsp = L of int * float * color * bsp * bsp | R of int * color
 
-  let change_color bsp pt =
+  let change_color ?(reverse=false) bsp pt =
     let rec change_color_depth bsp pt depth =
       match bsp with
       | L (n, v, c, left, right) ->
@@ -226,14 +246,7 @@ module Bsp_classic : Bsp_type = struct
          if is_left
          then L(n, v, c, change_color_depth left pt (depth + 1), right)
          else L(n, v, c, left, change_color_depth right pt (depth + 1))
-      | R (n, r) ->
-         if r = white
-         then R (n, red)
-         else if r = red
-         then R (n, blue)
-         else if r = blue
-         then R (n, white)
-         else failwith "not a valid color"
+      | R (n, r) -> R (n, next_color reverse r)
     in
     change_color_depth bsp pt 0
 
@@ -266,6 +279,12 @@ module Bsp_classic : Bsp_type = struct
             arr.(f) <- (color, (c, i) :: l)
         in add n; add w; add s; add e
     in fillBsp bsp (None, None, None, None) 0; arr
+
+  let rec clean bsp =
+    match bsp with
+    | L (n, f, c, left, right) ->
+       L (n, f, c, clean left, clean right)
+    | R (n , _) -> R (n, white)
 
   let generate_random_bsp bound_x bound_y =
     let rec index bsp nbL nbA = (* indexes lines and areas *)
@@ -307,7 +326,7 @@ module Bsp_classic : Bsp_type = struct
         let c = if acc = 0 then green else if acc > 0 then red else blue in
         L (n, l, c, color_bsp left, color_bsp right)
       | a -> a
-    in color_bsp bsp
+    in clean (color_bsp bsp)
 
   let iter_area f bsp bound_x bound_y =
     let rec iter_area_depth f bsp pt1 pt2 depth =
@@ -357,6 +376,4 @@ module Bsp_classic : Bsp_type = struct
     match bsp with
     | L (_, _, _, _, r) -> get_number_areas r
     | R (n, _) -> n + 1
-
-
 end

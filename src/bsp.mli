@@ -4,7 +4,7 @@ module type Bsp_type = sig
 
   type bsp
 
-  val change_color : bsp -> point -> bsp
+  val change_color : ?reverse:bool -> bsp -> point -> bsp
 
   val generate_random_bsp : float -> float -> bsp
 
@@ -17,6 +17,8 @@ module type Bsp_type = sig
   val get_number_lines : bsp -> int
 
   val get_number_areas : bsp -> int
+
+  val clean : bsp -> bsp
 
 end
 

@@ -1,23 +1,19 @@
-open Geometry
 open Bsp
 open View
-open Graphics
-
-module Classic = View.Make (Bsp_classic)
-
-module Extrem = View.Make (Bsp_extrem)
 
 let rec handler = ref select_mode
-   
+
 and select_mode st =
   match menu (Some st) with
   | None -> ()
   | Some Classic ->
-     handler := Classic.view ();
-     Classic.plot ()
+     let module B = View.Make (Bsp_classic) in
+     handler := B.view ();
+     B.plot ()
   | Some Extrem ->
-     handler := Extrem.view ();
-     Extrem.plot ()
+     let module B = View.Make (Bsp_extrem) in
+     handler := B.view ();
+     B.plot ()
 
 let main () =
   do_with_window
