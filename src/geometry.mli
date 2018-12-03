@@ -1,5 +1,18 @@
 type point = { x : float; y : float; }
 type line = { pt1 : point; pt2 : point; }
+
+type line_label = {
+    id      : int;
+    section : line;
+    color   : Graphics.color;
+  }
+
+type region_label = {
+    id : int;
+    color : Graphics.color;
+  }
+
+          
 val draw_line : Graphics.color -> int -> line -> unit
 val coefs : line -> (float * float) option
 val is_left : point -> line -> bool
@@ -12,10 +25,23 @@ val find_angle : point -> float
 val compare_counter_clockwise : point -> point -> point -> int
 val polygon_area : point list -> float
 val edges : float -> float -> point list * line list
-val separate_points :
-  line -> point list * point list -> point list -> point list * point list
-val split_by_line : line -> point list -> point list * point list
+
+val separate_points : line ->
+                      point list * point list ->
+                      point list ->
+                      point list * point list
+
+val split_by_line : line ->
+                    point list ->
+                    point list * point list
+
+val separate_lines : line ->
+                     line_label list * line_label list ->
+                     line_label list ->
+                     line_label list * line_label list
+
 val print_point : point -> unit
 val print_line : line -> unit
 val gen_dot_on_line : line -> point
 val gen_random_lines : point array -> line
+val is_on_line : line -> point -> bool

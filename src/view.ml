@@ -90,7 +90,7 @@ type game_mode = Classic | Extrem
 
 let menu st =
   let title = "Mondrian" in
-  let w, h = text_size title in 
+  let w, h = text_size title in
   let x_title = (window_width - w) / 2 in
   let y_title = 450 in
 
@@ -133,9 +133,13 @@ end
                      
 module Make (B : Bsp_complete) : Bsp_view = struct
   
-  let bsp = ref (B.generate_random_bsp board_width board_height)
+  let bsp, nb_lines =
+    let b, nb = B.generate_random_bsp board_width board_height in
+    ref b, nb
+
+  let adjacency = ref [| |]
   let history = ref []
-  
+
   let interface_button =
     let w = 100 in
     let h = 50 in
@@ -151,7 +155,7 @@ module Make (B : Bsp_complete) : Bsp_view = struct
 
     let no_history_msg = "No history" in
     let w_no_hist, h_no_hist = text_size no_history_msg in
-    
+
     let quit_hdl () = raise Exit in
     let clean_hdl () =
       history := [];
@@ -165,7 +169,7 @@ module Make (B : Bsp_complete) : Bsp_view = struct
       | pt :: tl ->
          bsp := B.change_color ~reverse:true !bsp pt;
          history := tl;
-    in    
+    in
     List.mapi (fun i (btn, h) -> (btn i, h))
       [quit_btn, quit_hdl;
        clean_btn, clean_hdl;
@@ -175,15 +179,16 @@ module Make (B : Bsp_complete) : Bsp_view = struct
 
   let plot_bsp bsp =
     B.iter_area
-      (fun color pts ->
-        set_color color;
+      (fun label pts ->
+        set_color label.color;
         let poly =
           Array.map
             (fun pt -> int_of_float pt.x, int_of_float pt.y) (Array.of_list pts)
         in fill_poly poly)
       bsp board_width board_height;
-    B.iter_line (draw_line white 5) bsp board_width board_height;
-    B.iter_line (draw_line black 3) bsp board_width board_height;
+    B.iter_line
+      (fun l -> draw_line white 5 l.section; draw_line l.color 3 l.section)
+      bsp board_width board_height;
     let _, e = edges board_width board_height in
     List.iter (fun x -> draw_line white 5 x; draw_line black 3 x) e
 
@@ -192,6 +197,34 @@ module Make (B : Bsp_complete) : Bsp_view = struct
     plot_bsp !bsp
 
   let view () =
+    bsp := B.init board_width board_height !bsp;
+    adjacency := B.get_lines_area board_width board_height !bsp 100;
+    let colors = B.colors board_width board_height !bsp in
+    bsp :=
+      B.fold board_width board_height
+        (fun line left right ->
+          let r, b =
+            List.fold_left
+              (fun (r, b) id ->
+                if colors.(id) = red
+                then r + 1, b
+                else if colors.(id) = blue
+                then r, b + 1
+                else r, b)
+              (0, 0)
+              !adjacency.(line.id)
+          in 
+          let label =
+            if r > b
+            then {line with color = red}
+            else if r < b
+            then {line with color = blue}
+            else {line with color = green}
+          in
+          B.node label left right)
+        (fun r _ -> B.region r)
+        !bsp;
+    bsp := B.clean board_width board_height !bsp;
     let hdl e =
       if e.button
       then begin
@@ -202,13 +235,13 @@ module Make (B : Bsp_complete) : Bsp_view = struct
                 x = float_of_int e.mouse_x;
                 y = float_of_int e.mouse_y} :: !history;
               bsp := B.change_color !bsp {
-                       x = float_of_int e.mouse_x;
-                       y = float_of_int e.mouse_y};
+                         x = float_of_int e.mouse_x;
+                         y = float_of_int e.mouse_y};
             end
           else if e.button then begin
-            match List.find_opt (fun (btn, h) -> is_click btn e) interface_button with
-            | Some (btn, h) -> h ()
-            | _ -> ()
+              match List.find_opt (fun (btn, h) -> is_click btn e) interface_button with
+              | Some (btn, h) -> h ()
+              | _ -> ()
             end;
           plot ()
         end
