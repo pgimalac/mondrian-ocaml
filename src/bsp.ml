@@ -9,9 +9,12 @@ module type Bsp_type = sig
 
   val generate_random_bsp : float -> float -> bsp
 
-  val iter_area : (color -> point list -> unit) -> bsp -> float -> float -> unit
+
+  val iter_area : (int -> color -> point list -> unit) -> bsp -> float -> float -> unit
 
   val iter_line : (int -> line -> color -> unit) -> bsp -> float -> float -> unit
+
+  val iter_line_area : (int -> line -> color -> unit) -> (int -> color -> point list -> unit) -> bsp -> float -> float -> unit
 
   val get_lines_area : bsp -> int -> (color * ((color * int) list)) array
 
@@ -60,22 +63,37 @@ module Bsp_extrem : Bsp_type = struct
          find_polygone left left_pts;
          find_polygone right right_pts;
          ()
-      | R (_, c) ->
+      | R (n, c) ->
          let barycenter = center pts in
          let pts = List.sort (compare_counter_clockwise barycenter) pts in
-         f c pts
+         f n c pts
     in
     let pts, lines = edges bound_x bound_y in
     find_polygone bsp pts
 
-  let gen_random_lines ptsArr =
-    let length = Array.length ptsArr in
-    let i = Random.int length in
-    let j = Random.int (length - 1) in
-    let j = if i <= j then j + 1 else j in
-    let d_i = {pt1 = ptsArr.(i); pt2 = ptsArr.((i + 1) mod length)} in
-    let d_j = {pt1 = ptsArr.(j); pt2 = ptsArr.((j + 1) mod length)} in
-    {pt1 = gen_dot_on_line d_i ; pt2 = gen_dot_on_line d_j}
+  let rec iter_line f bsp bound_x bound_y =
+    match bsp with
+    | L (n, l, c, left, right) ->
+       f n l c;
+       iter_line f left bound_x bound_y;
+       iter_line f right bound_x bound_y
+    | R _ -> ()
+
+  let iter_line_area f_line f_area bsp bound_x bound_y =
+    let rec find_polygone bsp pts =
+      match bsp with
+      | L (n, l, c, left, right) ->
+         f_line n l c;
+         let left_pts, right_pts = split_by_line l pts in
+         find_polygone left left_pts;
+         find_polygone right right_pts;
+         ()
+      | R (n, c) ->
+         let barycenter = center pts in
+         let pts = List.sort (compare_counter_clockwise barycenter) pts in
+         f_area n c pts
+    in let pts, lines = edges bound_x bound_y in
+    find_polygone bsp pts
 
   let rec add_random_line localBsp pts localDepth =
     if localDepth = 0
@@ -112,13 +130,6 @@ module Bsp_extrem : Bsp_type = struct
         bsp := add_random_line !bsp v maxDepth
       done;
       !bsp
-  let rec iter_line f bsp bound_x bound_y =
-    match bsp with
-    | L (n, l, c, left, right) ->
-       f n l c;
-       iter_line f left bound_x bound_y;
-       iter_line f right bound_x bound_y
-    | R _ -> ()
 
   let rec change_color ?(reverse=false) bsp pt =
     match bsp with
@@ -235,6 +246,67 @@ end
 module Bsp_classic : Bsp_type = struct
   type bsp = L of int * float * color * bsp * bsp | R of int * color
 
+  exception ToSmallArea
+  let min_area = 50.
+  let area_range = min_area /. 5.
+
+  let iter_area f bsp bound_x bound_y =
+    let rec iter_area_depth bsp pt1 pt2 depth =
+      match bsp with
+      | L (_, v, _, left, right) ->
+         if depth mod 2 = 0
+         then begin
+             iter_area_depth left pt1 {x = v; y = pt2.y} (depth + 1);
+             iter_area_depth right {x = v; y = pt1.y} pt2 (depth + 1)
+           end
+         else begin
+             iter_area_depth left pt1 {x = pt2.x; y = v} (depth + 1);
+             iter_area_depth right {x = pt1.x; y = v} pt2 (depth + 1)
+           end
+      | R (n, color) ->
+         f n color [pt1; {x = pt2.x; y = pt1.y}; pt2; {x = pt1.x; y = pt2.y}]
+    in
+    iter_area_depth bsp {x = 0.; y = 0.} {x = bound_x; y = bound_y} 0
+
+  let iter_line f bsp bound_x bound_y =
+    let rec iter_line_depth bsp pt1 pt2 depth =
+      match bsp with
+      | L (n, v, c, left, right) ->
+         if depth mod 2 = 0
+         then begin
+             f n {pt1 = {x = v; y = pt1.y}; pt2 = {x = v; y= pt2.y}} c;
+             iter_line_depth left pt1 {x = v; y = pt2.y} (depth + 1);
+             iter_line_depth right {x = v; y = pt1.y} pt2 (depth + 1)
+           end
+         else begin
+             f n {pt1 = {x = pt1.x; y = v}; pt2 = {x = pt2.x; y = v}} c;
+             iter_line_depth left pt1 {x = pt2.x; y = v} (depth + 1);
+             iter_line_depth right {x = pt1.x; y = v} pt2 (depth + 1)
+           end
+      | R _ -> ()
+    in
+    iter_line_depth bsp {x = 0.; y = 0.} {x = bound_x; y = bound_y} 0
+
+  let iter_line_area f_line f_area bsp bound_x bound_y =
+    let rec iter bsp pt1 pt2 depth =
+      match bsp with
+      | L (n, v, c, left, right) ->
+         if depth mod 2 = 0
+         then begin
+             f_line n {pt1 = {x = v; y = pt1.y}; pt2 = {x = v; y= pt2.y}} c;
+             iter left pt1 {x = v; y = pt2.y} (depth + 1) ;
+             iter right {x = v; y = pt1.y} pt2 (depth + 1)
+           end
+         else begin
+             f_line n {pt1 = {x = pt1.x; y = v}; pt2 = {x = pt2.x; y = v}} c;
+             iter left pt1 {x = pt2.x; y = v} (depth + 1);
+             iter right {x = pt1.x; y = v} pt2 (depth + 1)
+           end
+      | R (n, color) ->
+         f_area n color [pt1; {x = pt2.x; y = pt1.y}; pt2; {x = pt1.x; y = pt2.y}]
+    in
+    iter bsp {x = 0.; y = 0.} {x = bound_x; y = bound_y} 0
+
   let change_color ?(reverse=false) bsp pt =
     let rec change_color_depth bsp pt depth =
       match bsp with
@@ -250,23 +322,17 @@ module Bsp_classic : Bsp_type = struct
     in
     change_color_depth bsp pt 0
 
-  exception ToSmallArea
-  let min_area = 50.
-  let area_range = min_area /. 5.
-
   let get_lines_area bsp number_lines =
     let arr = Array.make number_lines (black, []) in
     let rec fillBsp bsp (n, w, s, e) depth =
       match bsp with
       | L (i, _, c, left, right) ->
         if depth mod 2 = 0
-        then
-          begin
+        then begin
             fillBsp left  (n, w, s, Some (c,i)) (depth + 1);
             fillBsp right (n, Some (c,i), s, e) (depth + 1)
           end
-        else
-          begin
+        else begin
             fillBsp left  (Some (c,i), w, s, e) (depth + 1);
             fillBsp right (n, w, Some (c,i), e) (depth + 1)
           end
@@ -327,43 +393,6 @@ module Bsp_classic : Bsp_type = struct
         L (n, l, c, color_bsp left, color_bsp right)
       | a -> a
     in clean (color_bsp bsp)
-
-  let iter_area f bsp bound_x bound_y =
-    let rec iter_area_depth f bsp pt1 pt2 depth =
-      match bsp with
-      | L (_, v, _, left, right) ->
-         if depth mod 2 = 0
-         then begin
-             iter_area_depth f left pt1 {x = v; y = pt2.y} (depth + 1);
-             iter_area_depth f right {x = v; y = pt1.y} pt2 (depth + 1)
-           end
-         else begin
-             iter_area_depth f left pt1 {x = pt2.x; y = v} (depth + 1);
-             iter_area_depth f right {x = pt1.x; y = v} pt2 (depth + 1)
-           end
-      | R (_, color) ->
-         f color [pt1; {x = pt2.x; y = pt1.y}; pt2; {x = pt1.x; y = pt2.y}]
-    in
-    iter_area_depth f bsp {x = 0.; y = 0.} {x = bound_x; y = bound_y} 0
-
-  let iter_line f bsp bound_x bound_y =
-    let rec iter_line_depth f bsp pt1 pt2 depth =
-      match bsp with
-      | L (n, v, c, left, right) ->
-         if depth mod 2 = 0
-         then begin
-             f n {pt1 = {x = v; y = pt1.y}; pt2 = {x = v; y= pt2.y}} c;
-             iter_line_depth f left pt1 {x = v; y = pt2.y} (depth + 1);
-             iter_line_depth f right {x = v; y = pt1.y} pt2 (depth + 1)
-           end
-         else begin
-             f n {pt1 = {x = pt1.x; y = v}; pt2 = {x = pt2.x; y = v}} c;
-             iter_line_depth f left pt1 {x = pt2.x; y = v} (depth + 1);
-             iter_line_depth f right {x = pt1.x; y = v} pt2 (depth + 1)
-           end
-      | R (_, color) -> ()
-    in
-    iter_line_depth f bsp {x = 0.; y = 0.} {x = bound_x; y = bound_y} 0
 
   let get_number_lines bsp =
     let rec getNbLines bsp i =

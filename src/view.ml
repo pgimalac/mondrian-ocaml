@@ -175,7 +175,7 @@ module Make (B : Bsp_type) : Bsp_view = struct
 
   let plot_bsp bsp =
     B.iter_area
-      (fun color pts ->
+      (fun _ color pts ->
         set_color color;
         let poly =
           Array.map

@@ -1,5 +1,6 @@
 type point = { x : float; y : float; }
 type line = { pt1 : point; pt2 : point; }
+
 val draw_line : Graphics.color -> int -> line -> unit
 val coefs : line -> (float * float) option
 val is_left : point -> line -> bool

@@ -8,9 +8,12 @@ module type Bsp_type = sig
 
   val generate_random_bsp : float -> float -> bsp
 
-  val iter_area : (Graphics.color -> point list -> unit) -> bsp -> float -> float -> unit
+
+  val iter_area : (int -> Graphics.color -> point list -> unit) -> bsp -> float -> float -> unit
 
   val iter_line : (int -> line -> Graphics.color -> unit) -> bsp -> float -> float -> unit
+
+  val iter_line_area : (int -> line -> Graphics.color -> unit) -> (int -> Graphics.color -> point list -> unit) -> bsp -> float -> float -> unit
 
   val get_lines_area : bsp -> int -> (Graphics.color * ((Graphics.color * int) list)) array
 
