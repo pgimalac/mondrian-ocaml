@@ -32,11 +32,12 @@ module type Bsp_type = sig
       the first function create a value from the value returned
       by the left and right node, the second function return a value
       for a given area (based on it color and polygon) *)
-  val fold : float -> float ->
+  val fold : float -> float -> 
              (Geometry.line_label -> 'a -> 'a -> 'a) ->
-             (Geometry.region_label -> Geometry.point list -> 'a) ->
+             (Geometry.region_label -> 'a) ->
              bsp -> 'a
-
+  (** apply a side effect on a region
+      based on accumulators generated with adjacents lines *)
   val iter : float -> float ->
              (Geometry.line_label -> 'a -> 'a * 'a) ->
              (Geometry.region_label -> 'a -> unit) ->
@@ -65,8 +66,10 @@ module type Bsp_complete = sig
     
   val get_lines_area : float -> float -> bsp -> int -> int list array
 
+  (** set unique id for each region and line *)
   val init : float -> float -> bsp -> bsp
 
+  (** return an array containing at index i the color of the associated region *)
   val colors : float -> float -> bsp -> int array
 end
 

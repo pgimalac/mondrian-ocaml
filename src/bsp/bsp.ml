@@ -15,7 +15,7 @@ module type Bsp_type = sig
     
   val fold : float -> float ->
              (line_label -> 'a -> 'a -> 'a) ->
-             (region_label -> point list -> 'a) ->
+             (region_label -> 'a) ->
              bsp -> 'a
 
   val iter : float -> float ->
@@ -41,6 +41,7 @@ module type Bsp_complete = sig
   val init : float -> float -> bsp -> bsp
 
   val colors : float -> float -> bsp -> int array
+
 end
 
 module Make (B : Bsp_type) = struct
@@ -48,15 +49,27 @@ module Make (B : Bsp_type) = struct
   include B
 
   let iter_area f bsp bound_x bound_y =
-    fold bound_x bound_y (fun _ _ _ -> ()) f bsp
+    let pts, _ = edges bound_x bound_y in
+    iter bound_x bound_y
+      (fun l pts -> split_by_line l.section pts)
+      (fun r pts -> 
+         let barycenter = center pts in
+         let pts = List.sort (compare_counter_clockwise barycenter) pts in
+         f r pts)
+      pts
+      bsp
 
   let iter_line f bsp bound_x bound_y =
-    fold bound_x bound_y (fun l _ _ -> f l) (fun _ _ -> ()) bsp
+    iter bound_x bound_y
+      (fun l () -> f l; (), ())
+      (fun _ _ -> ())
+      ()
+      bsp
 
   let clean bound_x bound_y bsp =
-    fold bound_x bound_y
+    fold bound_x bound_y 
       node
-      (fun r _ -> region {r with color = white})
+      (fun r -> region {r with color = white})
       bsp
 
   let get_lines_area bound_x bound_y bsp number_lines =
@@ -74,20 +87,23 @@ module Make (B : Bsp_type) = struct
   let init bound_x bound_y bsp =
     let i = ref (-1) in
     let j = ref (-1) in
-    fold bound_x bound_y
-      (fun l left right ->
-        j := !j + 1;
-        node {l with id = !j} left right)
-      (fun r _ ->
-        i := !i + 1;
-        region {r with id = !i})
-      bsp
+    let t =
+      fold bound_x bound_y 
+        (fun l left right ->
+          j := !j + 1;
+          node {l with id = !j} left right)
+        (fun r ->
+          i := !i + 1;
+          region {r with id = !i})
+        bsp
+    in
+    t
 
   let colors bound_x bound_y bsp =
     let colors = 
-      fold bound_x bound_y
+      fold bound_x bound_y 
         (fun _ left right -> left @ right)
-        (fun region _ -> [region.color])
+        (fun region -> [region.color])
         bsp
     in
     Array.of_list colors

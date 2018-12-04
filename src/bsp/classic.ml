@@ -38,7 +38,7 @@ module Bsp_classic : Bsp_type = struct
     change_color_depth bsp pt 0
 
   exception ToSmallArea
-  let min_area = 100.
+  let min_area = 50.
   let area_range = min_area /. 5.
 
   let generate_random_bsp bound_x bound_y =
@@ -93,14 +93,9 @@ module Bsp_classic : Bsp_type = struct
       match bsp with
       | L (v, left, right) ->
          let line, ptl, ptr = pp v pt1 pt2 depth in
-         let accl, accr =
-           fold_depth left ptl (depth + 1),
-           fold_depth right ptr (depth + 1)
-         in
          let label = to_line_label v line in
-         f label accl accr
-      | R color ->
-         g color [pt1; {x = pt2.x; y = pt1.y}; pt2; {x = pt1.x; y = pt2.y}]
+         f label (fold_depth left ptl (depth + 1)) (fold_depth right ptr (depth + 1))
+      | R color -> g color
     in
     fold_depth bsp ({x = 0.; y = 0.}, {x = bound_x; y = bound_y}) 0
 

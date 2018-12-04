@@ -7,21 +7,13 @@ module Bsp_extrem : Bsp_type = struct
                
   type bsp = R of region_label | L of line_label * bsp * bsp
 
-  let fold bound_x bound_y f g bsp =
-    let rec aux bsp pts =
+  let fold bx by f g bsp =
+    let rec aux bsp =
       match bsp with
-      | L (l, left, right) ->
-         let left_pts, right_pts = split_by_line l.section pts in
-         let accl = aux left left_pts in
-         let accr = aux right right_pts in
-         f l accl accr
-      | R a ->
-         let barycenter = center pts in
-         let pts = List.sort (compare_counter_clockwise barycenter) pts in
-         g a pts
+      | L (l, left, right) -> f l (aux left) (aux right)
+      | R a -> g a
     in
-    let pts, lines = edges bound_x bound_y in
-    aux bsp pts
+    aux bsp
 
   let iter bx by f g acc0 bsp =
     let rec aux bsp acc =
@@ -92,7 +84,9 @@ module Bsp_extrem : Bsp_type = struct
       done;
       !bsp
 
-  and generate_random_bsp width height = gen_random_bsp width height 100 (-1), !nb
+  and generate_random_bsp width height =
+    let bsp = gen_random_bsp width height 100 (-1) in
+    bsp, !nb
 end
 
 module Bsp = Bsp.Make (Bsp_extrem)

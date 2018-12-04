@@ -8,7 +8,7 @@ SOURCES_FP = $(addprefix $(FOLDER), $(SOURCES))
 
 CAMLC = ocamlc
 LIBS = graphics.cma
-FLAGS = -I src/ -I src/bsp
+FLAGS = -g -I src/ -I src/bsp
 
 all: $(NAME)
 

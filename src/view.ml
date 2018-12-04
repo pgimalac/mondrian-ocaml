@@ -195,10 +195,10 @@ module Make (B : Bsp_complete) : Bsp_view = struct
   let plot () =
     List.iter (fun (btn, _) -> print_btn btn) interface_button;
     plot_bsp !bsp
-
-  let view () =
+    
+  let color_lines () = 
     bsp := B.init board_width board_height !bsp;
-    adjacency := B.get_lines_area board_width board_height !bsp 100;
+    adjacency := B.get_lines_area board_width board_height !bsp nb_lines;
     let colors = B.colors board_width board_height !bsp in
     bsp :=
       B.fold board_width board_height
@@ -222,9 +222,12 @@ module Make (B : Bsp_complete) : Bsp_view = struct
             else {line with color = green}
           in
           B.node label left right)
-        (fun r _ -> B.region r)
+        B.region
         !bsp;
-    bsp := B.clean board_width board_height !bsp;
+    bsp := B.clean board_width board_height !bsp
+
+  let view () =
+    color_lines ();
     let hdl e =
       if e.button
       then begin
