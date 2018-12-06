@@ -1,4 +1,6 @@
 open Bsp
+open Classic
+open Extrem
 open View
 
 let rec handler = ref select_mode
@@ -7,11 +9,11 @@ and select_mode st =
   match menu (Some st) with
   | None -> ()
   | Some Classic ->
-     let module B = View.Make (Bsp_classic) in
+     let module B = View.Make (Classic.Bsp) in
      handler := B.view ();
      B.plot ()
   | Some Extrem ->
-     let module B = View.Make (Bsp_extrem) in
+     let module B = View.Make (Extrem.Bsp) in
      handler := B.view ();
      B.plot ()
 

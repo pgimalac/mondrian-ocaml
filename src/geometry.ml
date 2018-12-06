@@ -3,6 +3,25 @@ open Graphics
 type point = { x : float; y : float; }
 type line = { pt1 : point; pt2 : point; }
 
+type line_label = {
+    id      : int;
+    section : line;
+    color   : color;
+  }
+
+let change_label label line =
+  {
+    id = label.id;
+    color = label.color;
+    section = line
+  }
+                
+type region_label = {
+    id : int;
+    color : color;
+  }
+
+          
 let draw_line color width l =
   Graphics.set_line_width width;
   Graphics.set_color color;
@@ -141,14 +160,32 @@ let separate_points l =
       else pts_l, pt :: pts_r)
 
 let split_by_line l pts =
-  List.fold_left (fun (pts_l, pts_r) pt ->
-      if is_left pt l
-      then if is_right pt l
-           then pt :: pts_l, pt :: pts_r
-           else pt :: pts_l, pts_r
-      else pts_l, pt :: pts_r)
-    ([l.pt1; l.pt2], [l.pt1; l.pt2]) pts
+  separate_points l ([l.pt1; l.pt2], [l.pt1; l.pt2]) pts
 
+let separate_lines l  =
+  List.fold_left
+    (fun (left, right) label ->
+      let pt1, pt2 = label.section.pt1, label.section.pt2 in
+      if is_left pt1 l && is_left pt2 l
+      then label :: left, right
+      else if is_right pt1 l && is_right pt2 l
+      then left, label :: right
+      else
+        let inter =
+          if is_on_line label.section l.pt1
+          then l.pt1
+          else l.pt2 in
+        let ptL, ptR =
+          if is_left pt1 l
+          then pt1, pt2
+          else pt2, pt1
+        in
+        let leftlabel, rightlabel =
+          change_label label {pt1 = ptL; pt2 = inter}, 
+          change_label label {pt1 = ptR; pt2 = inter} in
+        leftlabel :: left, rightlabel :: right)
+
+  
 let rec print_point pt =
   print_string ("("^(string_of_float pt.x)^","^(string_of_float pt.y)^")");
   flush stdout

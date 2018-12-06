@@ -29,7 +29,6 @@ let do_with_window
     while true do
       let e = wait_next_event [Button_down; Key_pressed; Mouse_motion] in
       if e.keypressed && e.key = 'q' then raise Exit;
-      if e.keypressed || e.button then clear_graph ();
       f e;
     done;
   with Exit -> ();
@@ -110,11 +109,11 @@ let menu st =
   match st with
   | Some st when st.button ->
      begin
-     match List.find_opt (fun (btn, _) -> is_click btn st) buttons with
-     | Some (btn, hdl) -> hdl st
-     | None ->
-        print_menu (List.map (fun (btn, _) -> is_click btn st) buttons);
-        None
+       match List.find_opt (fun (btn, _) -> is_click btn st) buttons with
+       | Some (btn, hdl) -> hdl st
+       | None ->
+          print_menu (List.map (fun (btn, _) -> is_click btn st) buttons);
+          None
      end
   | Some st ->
      print_menu (List.map (fun (btn, _) -> is_click btn st) buttons);
@@ -131,9 +130,13 @@ module type Bsp_view = sig
 
 end
 
-module Make (B : Bsp_type) : Bsp_view = struct
+module Make (B : Bsp_complete) : Bsp_view = struct
 
-  let bsp = ref (B.generate_random_bsp board_width board_height)
+  let bsp, nb_lines =
+    let b, nb = B.generate_random_bsp board_width board_height in
+    ref b, nb
+
+  let adjacency = ref [| |]
   let history = ref []
 
   let interface_button =
@@ -155,7 +158,7 @@ module Make (B : Bsp_type) : Bsp_view = struct
     let quit_hdl () = raise Exit in
     let clean_hdl () =
       history := [];
-      bsp := B.clean !bsp in
+      bsp := B.clean board_width board_height !bsp in
     let cancel_hdl () =
       match !history with
       | [] ->
@@ -175,14 +178,16 @@ module Make (B : Bsp_type) : Bsp_view = struct
 
   let plot_bsp bsp =
     B.iter_area
-      (fun _ color pts ->
-        set_color color;
+      (fun label pts ->
+        set_color label.color;
         let poly =
           Array.map
             (fun pt -> int_of_float pt.x, int_of_float pt.y) (Array.of_list pts)
         in fill_poly poly)
       bsp board_width board_height;
-    B.iter_line (fun _ l c -> draw_line white 5 l; draw_line c 3 l) bsp board_width board_height;
+    B.iter_line
+      (fun l -> draw_line white 5 l.section; draw_line l.color 3 l.section)
+      bsp board_width board_height;
     let _, e = edges board_width board_height in
     List.iter (fun x -> draw_line white 5 x; draw_line black 3 x) e
 
@@ -190,7 +195,38 @@ module Make (B : Bsp_type) : Bsp_view = struct
     List.iter (fun (btn, _) -> print_btn btn) interface_button;
     plot_bsp !bsp
 
+  let color_lines () =
+    bsp := B.init board_width board_height !bsp;
+    adjacency := B.get_lines_area board_width board_height !bsp nb_lines;
+    let colors = B.colors board_width board_height !bsp in
+    bsp :=
+      B.fold board_width board_height
+        (fun line left right ->
+          let r, b =
+            List.fold_left
+              (fun (r, b) id ->
+                if colors.(id) = red
+                then r + 1, b
+                else if colors.(id) = blue
+                then r, b + 1
+                else r, b)
+              (0, 0)
+              !adjacency.(line.id)
+          in
+          let label =
+            if r > b
+            then {line with color = red}
+            else if r < b
+            then {line with color = blue}
+            else {line with color = green}
+          in
+          B.node label left right)
+        B.region
+        !bsp;
+    bsp := B.clean board_width board_height !bsp
+
   let view () =
+    color_lines ();
     let hdl e =
       if e.button
       then begin
@@ -201,13 +237,13 @@ module Make (B : Bsp_type) : Bsp_view = struct
                 x = float_of_int e.mouse_x;
                 y = float_of_int e.mouse_y} :: !history;
               bsp := B.change_color !bsp {
-                       x = float_of_int e.mouse_x;
-                       y = float_of_int e.mouse_y};
+                         x = float_of_int e.mouse_x;
+                         y = float_of_int e.mouse_y};
             end
           else if e.button then begin
-            match List.find_opt (fun (btn, h) -> is_click btn e) interface_button with
-            | Some (btn, h) -> h ()
-            | _ -> ()
+              match List.find_opt (fun (btn, h) -> is_click btn e) interface_button with
+              | Some (btn, h) -> h ()
+              | _ -> ()
             end;
           plot ()
         end
