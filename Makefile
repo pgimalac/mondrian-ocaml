@@ -1,7 +1,7 @@
 NAME = mondrian
-SOURCES = geometry.ml \
-          bsp/bsp.ml bsp/extrem.ml bsp/classic.ml \
-          view.ml main.ml
+SOURCES = geometry.ml logic.ml sat_solver.ml \
+		  bsp/bsp.ml bsp/extrem.ml bsp/classic.ml \
+		  view.ml main.ml
 
 FOLDER = src/
 SOURCES_FP = $(addprefix $(FOLDER), $(SOURCES))

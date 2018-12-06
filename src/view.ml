@@ -150,11 +150,36 @@ module Make (B : Bsp_complete) : Bsp_view = struct
     let clean_btn i = create_button "Clean" (x_pos i) y w h ~bkg:blue in
     let cancel_btn i = create_button "Cancel" (x_pos i) y w h ~bkg:blue in
     let help_btn i = create_button "Help" (x_pos i) y w h ~bkg:blue in
-    let sol_btn i = create_button "Is solution ?" (x_pos i) y w h ~bkg:blue in
+    let sol_btn i = create_button "Exists solution ?" (x_pos i) y w h ~bkg:blue in
 
     let no_history_msg = "No history" in
     let w_no_hist, h_no_hist = text_size no_history_msg in
 
+    let no_solution_msg = "No solution" in
+    let w_no_sol, h_no_sol = text_size no_solution_msg in
+
+    let has_solution_msg = "There is a solution" in
+    let w_has_sol, h_has_sol = text_size has_solution_msg in
+
+    let help_hdl () =
+      let x = B.get_clue board_width board_height !adjacency !bsp in
+      match x with
+      | None -> ()
+      | Some (n, c) -> bsp := B.color_nth board_width board_height !bsp n c
+      (* change to make the zone blink *)
+    in
+    let sol_hdl () =
+      set_color black;
+      if B.has_solution board_width board_height !adjacency !bsp
+      then begin
+        moveto ((window_width - w_has_sol) / 2) 605;
+        draw_string has_solution_msg
+      end
+      else begin
+        moveto ((window_width - w_no_sol) / 2) 605;
+        draw_string no_solution_msg
+      end
+    in
     let quit_hdl () = raise Exit in
     let clean_hdl () =
       history := [];
@@ -173,8 +198,8 @@ module Make (B : Bsp_complete) : Bsp_view = struct
       [quit_btn, quit_hdl;
        clean_btn, clean_hdl;
        cancel_btn, cancel_hdl;
-       help_btn, quit_hdl;
-       sol_btn, quit_hdl]
+       help_btn, help_hdl;
+       sol_btn, sol_hdl]
 
   let plot_bsp bsp =
     B.iter_area
