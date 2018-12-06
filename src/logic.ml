@@ -3,7 +3,7 @@
 
 let antilogy = [[(true, 0)]; [(false, 0)]]
 
-let tautology = [[]]
+let tautology = []
 
 (* all subsets of size k of l *)
 let select b k l =

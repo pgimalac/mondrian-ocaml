@@ -35,7 +35,7 @@ module type Bsp_type = sig
 
   val get_solution : bsp -> (bool * int) list option
 
-  val get_clue : bsp -> bsp
+  val get_clue : bsp -> (int * color) option
 
   val has_solution : bsp -> bool
 
@@ -68,7 +68,7 @@ let next_color reverse c =
 
 
 module Bsp_extrem : Bsp_type = struct
-  let min_area = 5000.
+  let min_area = 2000.
 
   type bsp = R of int * color | L of int * line * color * bsp * bsp
 
@@ -337,13 +337,16 @@ module Bsp_extrem : Bsp_type = struct
   let get_clue bsp =
     let sol = get_solution bsp in
     match sol with
-    | None -> print_endline "No solution."; bsp
+    | None -> print_endline "No solution."; None
     | Some s ->
       print_endline "There is a solution.";
-      let n = Random.int (List.length s) in
-      let (b, i) = List.nth s n in
-      let c = if b then red else blue in
-      color_nth bsp i c
+      let size = List.length s in
+      if size > 0 then
+        let n = Random.int size in
+        let (b, i) = List.nth s n in
+        let c = if b then red else blue in
+        Some (i, c)
+      else None
 
   let has_solution bsp = (get_solution bsp) <> None
 
@@ -611,13 +614,17 @@ module Bsp_classic : Bsp_type = struct
   let get_clue bsp =
     let sol = get_solution bsp in
     match sol with
-    | None -> print_endline "No solution."; bsp
+    | None -> print_endline "No solution."; None
     | Some s ->
       print_endline "There is a solution.";
-      let n = Random.int (List.length s) in
-      let (b, i) = List.nth s n in
-      let c = if b then red else blue in
-      color_nth bsp i c
+      let size = List.length s in
+      if size > 0
+      then
+        let n = Random.int size in
+        let (b, i) = List.nth s n in
+        let c = if b then red else blue in
+        Some (i, c)
+      else None
 
   let has_solution bsp = (get_solution bsp) <> None
 

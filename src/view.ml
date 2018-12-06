@@ -159,7 +159,11 @@ module Make (B : Bsp_type) : Bsp_view = struct
     let w_has_sol, h_has_sol = text_size has_solution_msg in
 
     let help_hdl () =
-      bsp := B.get_clue !bsp
+      let x = B.get_clue !bsp in
+      match x with
+      | None -> ()
+      | Some (n, c) -> bsp := B.color_nth !bsp n c
+      (* change to make the zone blink *)
     in
     let sol_hdl () =
       set_color black;

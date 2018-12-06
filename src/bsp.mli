@@ -28,7 +28,7 @@ module type Bsp_type = sig
 
   val get_solution : bsp -> (bool * int) list option
 
-  val get_clue : bsp -> bsp
+  val get_clue : bsp -> (int * Graphics.color) option
 
   val has_solution : bsp -> bool
 
