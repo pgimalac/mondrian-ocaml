@@ -29,7 +29,6 @@ let do_with_window
     while true do
       let e = wait_next_event [Button_down; Key_pressed; Mouse_motion] in
       if e.keypressed && e.key = 'q' then raise Exit;
-      if e.keypressed || e.button then clear_graph ();
       f e;
     done;
   with Exit -> ();
@@ -110,11 +109,11 @@ let menu st =
   match st with
   | Some st when st.button ->
      begin
-     match List.find_opt (fun (btn, _) -> is_click btn st) buttons with
-     | Some (btn, hdl) -> hdl st
-     | None ->
-        print_menu (List.map (fun (btn, _) -> is_click btn st) buttons);
-        None
+       match List.find_opt (fun (btn, _) -> is_click btn st) buttons with
+       | Some (btn, hdl) -> hdl st
+       | None ->
+          print_menu (List.map (fun (btn, _) -> is_click btn st) buttons);
+          None
      end
   | Some st ->
      print_menu (List.map (fun (btn, _) -> is_click btn st) buttons);
@@ -130,9 +129,9 @@ module type Bsp_view = sig
   val view : unit -> Graphics.status -> unit
 
 end
-                     
+
 module Make (B : Bsp_complete) : Bsp_view = struct
-  
+
   let bsp, nb_lines =
     let b, nb = B.generate_random_bsp board_width board_height in
     ref b, nb
@@ -195,8 +194,8 @@ module Make (B : Bsp_complete) : Bsp_view = struct
   let plot () =
     List.iter (fun (btn, _) -> print_btn btn) interface_button;
     plot_bsp !bsp
-    
-  let color_lines () = 
+
+  let color_lines () =
     bsp := B.init board_width board_height !bsp;
     adjacency := B.get_lines_area board_width board_height !bsp nb_lines;
     let colors = B.colors board_width board_height !bsp in
@@ -213,7 +212,7 @@ module Make (B : Bsp_complete) : Bsp_view = struct
                 else r, b)
               (0, 0)
               !adjacency.(line.id)
-          in 
+          in
           let label =
             if r > b
             then {line with color = red}
