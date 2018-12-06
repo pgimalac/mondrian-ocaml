@@ -1,5 +1,7 @@
 mondrian
 *.cmi
 *.cmo
+*.pdf
+*.merlin
 *.sublime-project
 *.sublime-workspace

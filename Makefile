@@ -1,12 +1,12 @@
 NAME = mondrian
-SOURCES = geometry.ml bsp.ml view.ml main.ml
+SOURCES = logic.ml sat_solver.ml geometry.ml bsp.ml view.ml main.ml
 
 FOLDER = src/
 SOURCES_FP = $(addprefix $(FOLDER), $(SOURCES))
 
 CAMLC = ocamlc
 LIBS = graphics.cma
-FLAGS = -I $(FOLDER)
+FLAGS = -g -I $(FOLDER)
 
 all: $(NAME)
 

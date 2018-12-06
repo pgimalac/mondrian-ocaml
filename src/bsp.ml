@@ -1,5 +1,11 @@
 open Graphics
 open Geometry
+open Sat_solver
+
+module SOLVER = Make (struct
+  type t = int
+  let compare a b = a - b
+end)
 
 module type Bsp_type = sig
 
@@ -9,6 +15,7 @@ module type Bsp_type = sig
 
   val generate_random_bsp : float -> float -> bsp
 
+  val color_nth : bsp -> int -> color -> bsp
 
   val iter_area : (int -> color -> point list -> unit) -> bsp -> float -> float -> unit
 
@@ -23,6 +30,16 @@ module type Bsp_type = sig
   val get_number_areas : bsp -> int
 
   val clean : bsp -> bsp
+
+  val get_fnc : bsp -> (bool * int) list list
+
+  val get_solution : bsp -> (bool * int) list option
+
+  val get_clue : bsp -> bsp
+
+  val has_solution : bsp -> bool
+
+  val is_solution : bsp -> bool
 
 end
 
@@ -142,6 +159,14 @@ module Bsp_extrem : Bsp_type = struct
        L (n, l, c, left, right)
     | R (n, c) -> R (n, next_color reverse c)
 
+  let rec color_nth bsp n color =
+    match bsp with
+    | L (i, l, c, left, right) ->
+      L (i, l, c, color_nth left n color, color_nth right n color)
+    | R (i, origin) ->
+      if n = i then R (i, color)
+      else R (i, origin)
+
   let rec add_random_line localBsp pts localDepth =
     if localDepth = 0
     then localBsp
@@ -176,6 +201,18 @@ module Bsp_extrem : Bsp_type = struct
         bsp := add_random_line !bsp v maxDepth
       done;
       !bsp
+
+  let get_number_lines bsp =
+    let rec getNbLines bsp i =
+      match bsp with
+      | L (n, _, _, _, r) -> getNbLines r n
+      | R _ -> i + 1
+    in getNbLines bsp 0
+
+  let rec get_number_areas bsp =
+    match bsp with
+    | L (_, _, _, _, r) -> get_number_areas r
+    | R (n, _) -> n + 1
 
   let get_lines_area bsp number_lines =
     let rec separate l (left, right) (i, c, pt1, pt2) =
@@ -224,23 +261,113 @@ module Bsp_extrem : Bsp_type = struct
       match bsp with
       | L (n, l, _, left, right) ->
         let _, li = arr.(n) in
-        let acc = List.fold_right (fun (c, _) -> (+) (if c = red then 1 else -1)) li 0 in
+        let acc = List.fold_left (fun acc (c, _) -> acc + (if c = red then 1 else -1)) 0 li in
         let c = if acc = 0 then green else if acc > 0 then red else blue in
         L (n, l, c, color_bsp left, color_bsp right)
       | a -> a
     in clean (color_bsp bsp)
 
-  let get_number_lines bsp =
-    let rec getNbLines bsp i =
-      match bsp with
-      | L (n, _, _, _, r) -> getNbLines r n
-      | R _ -> i
-    in getNbLines bsp 0
+  let get_fnc bsp =
+    let nb_lines = get_number_lines bsp in
+    let arr = get_lines_area bsp nb_lines in
+    let print_fnc f = (* for debug purpose *)
+      List.iter (fun x ->
+        print_string "[";
+        List.iter (fun (b, n) -> if not b then print_string "not "; print_int n; print_string " ") x;
+        print_string "] et ";
+      ) f;
+      print_newline () in
+    let print_aja i = (* for debug purpose *)
+      let c, l = arr.(i) in
+      if c = red then print_string "red : "
+      else if c = blue then print_string "blue : "
+      else print_string "green : ";
+      List.iter (fun (c, n) ->
+        if c = red then print_string "(red, "
+        else if c = blue then print_string "(blue, "
+        else print_string "(white, ";
+        print_int n;
+        print_string ") "
+      ) l;
+      print_newline () in
+    let get_fnc_line i =
+      let c, l = arr.(i) in
+      let size, r, b, l = List.fold_left
+        (fun (s, r, b, l) (c, n) ->
+          (s + 1,
+            r + (if c = red then 1 else 0),
+            b + (if c = blue then 1 else 0),
+            if c = white then n :: l else l
+          )
+        ) (0, 0, 0, []) l in
+      if c = green
+      then
+        (
+          let nbR = (size / 2 - r) in
+          if size mod 2 = 0 && nbR >= 0
+          then Logic.split true nbR l
+          else Logic.antilogy
+        )
+      else
+        let boo = (c = red) in
+        let k = size / 2 + 1 - (
+          if boo then r else b
+        ) in
+        if k < 0
+        then Logic.tautology
+        else Logic.at_least boo k l
+    in
+    let fnc = ref [] in
+    iter_area (fun n c _ ->
+        if c = white
+        then fnc := [(true, n); (false, n)] :: !fnc
+        else ()
+      ) bsp 0. 0.;
+    for i = 0 to Array.length arr - 1 do
+      let f = get_fnc_line i in
+      print_aja i;
+      print_fnc f;
+      print_newline ();
+      fnc := List.rev_append f !fnc
+    done;
+    !fnc
 
-  let rec get_number_areas bsp =
-    match bsp with
-    | L (_, _, _, _, r) -> get_number_areas r
-    | R (n, _) -> n
+  let get_solution bsp = SOLVER.solve (get_fnc bsp)
+
+  let get_clue bsp =
+    let sol = get_solution bsp in
+    match sol with
+    | None -> print_endline "No solution."; bsp
+    | Some s ->
+      print_endline "There is a solution.";
+      let n = Random.int (List.length s) in
+      let (b, i) = List.nth s n in
+      let c = if b then red else blue in
+      color_nth bsp i c
+
+  let has_solution bsp = (get_solution bsp) <> None
+
+  let is_solution bsp =
+    let rec is_full bsp =
+      match bsp with
+      | L (_, _, c, left, right) ->
+        c <> white && is_full left && is_full right
+      | _ -> true
+    in
+    if is_full bsp
+    then true
+    else
+      let arr = get_lines_area bsp (get_number_lines bsp) in
+      Array.for_all (fun (c, l) ->
+        let r, b = List.fold_left
+          (fun (r, b) (c, n) ->
+            ((if c = red then 1 else 0) + r, (if c = blue then 1 else 0) + b)
+          ) (0, 0) l in
+          if c = red then r > b
+          else if c = blue then r < b
+          else r = b
+      ) arr
+
 end
 
 module Bsp_classic : Bsp_type = struct
@@ -322,6 +449,14 @@ module Bsp_classic : Bsp_type = struct
     in
     change_color_depth bsp pt 0
 
+  let rec color_nth bsp n color =
+    match bsp with
+    | L (i, l, c, left, right) ->
+      L (i, l, c, color_nth left n color, color_nth right n color)
+    | R (i, origin) ->
+      if n = i then R (i, color)
+      else R (i, origin)
+
   let get_lines_area bsp number_lines =
     let arr = Array.make number_lines (black, []) in
     let rec fillBsp bsp (n, w, s, e) depth =
@@ -388,7 +523,7 @@ module Bsp_classic : Bsp_type = struct
       match bsp with
       | L (n, l, _, left, right) ->
         let _, li = arr.(n) in
-        let acc = List.fold_right (fun (c, _) -> (+) (if c = red then 1 else -1)) li 0 in
+        let acc = List.fold_left (fun acc (c, _) -> acc + (if c = red then 1 else -1)) 0 li in
         let c = if acc = 0 then green else if acc > 0 then red else blue in
         L (n, l, c, color_bsp left, color_bsp right)
       | a -> a
@@ -405,4 +540,106 @@ module Bsp_classic : Bsp_type = struct
     match bsp with
     | L (_, _, _, _, r) -> get_number_areas r
     | R (n, _) -> n + 1
+
+  let get_fnc bsp =
+    let nb_lines = get_number_lines bsp in
+    let arr = get_lines_area bsp nb_lines in
+    let print_fnc f = (* for debug purpose *)
+      List.iter (fun x ->
+        print_string "[";
+        List.iter (fun (b, n) -> if not b then print_string "not "; print_int n; print_string " ") x;
+        print_string "] et ";
+      ) f;
+      print_newline () in
+    let print_aja i = (* for debug purpose *)
+      let c, l = arr.(i) in
+      if c = red then print_string "red : "
+      else if c = blue then print_string "blue : "
+      else print_string "green : ";
+      List.iter (fun (c, n) ->
+        if c = red then print_string "(red, "
+        else if c = blue then print_string "(blue, "
+        else print_string "(white, ";
+        print_int n;
+        print_string ") "
+      ) l;
+      print_newline () in
+    let get_fnc_line i =
+      let c, l = arr.(i) in
+      let size, r, b, l = List.fold_left
+        (fun (s, r, b, l) (c, n) ->
+          (s + 1,
+            r + (if c = red then 1 else 0),
+            b + (if c = blue then 1 else 0),
+            if c = white then n :: l else l
+          )
+        ) (0, 0, 0, []) l in
+      if c = green
+      then
+        (
+          let nbR = (size / 2 - r) in
+          if size mod 2 = 0 && nbR >= 0
+          then Logic.split true nbR l
+          else Logic.antilogy
+        )
+      else
+        let boo = (c = red) in
+        let k = size / 2 + 1 - (
+          if boo then r else b
+        ) in
+        if k < 0
+        then Logic.tautology
+        else Logic.at_least boo k l
+    in
+    let fnc = ref [] in
+    iter_area (fun n c _ ->
+        if c = white
+        then fnc := [(true, n); (false, n)] :: !fnc
+        else ()
+      ) bsp 0. 0.;
+    for i = 0 to Array.length arr - 1 do
+      let f = get_fnc_line i in
+      print_aja i;
+      print_fnc f;
+      print_newline ();
+      fnc := List.rev_append f !fnc
+    done;
+    !fnc
+
+  let get_solution bsp = SOLVER.solve (get_fnc bsp)
+
+  let get_clue bsp =
+    let sol = get_solution bsp in
+    match sol with
+    | None -> print_endline "No solution."; bsp
+    | Some s ->
+      print_endline "There is a solution.";
+      let n = Random.int (List.length s) in
+      let (b, i) = List.nth s n in
+      let c = if b then red else blue in
+      color_nth bsp i c
+
+  let has_solution bsp = (get_solution bsp) <> None
+
+  let is_solution bsp =
+    let rec is_full bsp =
+      match bsp with
+      | L (_, _, c, left, right) ->
+        c <> white && is_full left && is_full right
+      | _ -> true
+    in
+    if is_full bsp
+    then true
+    else
+      let arr = get_lines_area bsp (get_number_lines bsp) in
+      Array.for_all (fun (c, l) ->
+        let r, b = List.fold_left
+          (fun (r, b) (c, n) ->
+            ((if c = red then 1 else 0) + r, (if c = blue then 1 else 0) + b)
+          ) (0, 0) l in
+          if c = red then r > b
+          else if c = blue then r < b
+          else r = b
+      ) arr
+
 end

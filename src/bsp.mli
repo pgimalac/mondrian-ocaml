@@ -8,6 +8,7 @@ module type Bsp_type = sig
 
   val generate_random_bsp : float -> float -> bsp
 
+  val color_nth : bsp -> int -> Graphics.color -> bsp
 
   val iter_area : (int -> Graphics.color -> point list -> unit) -> bsp -> float -> float -> unit
 
@@ -22,6 +23,16 @@ module type Bsp_type = sig
   val get_number_areas : bsp -> int
 
   val clean : bsp -> bsp
+
+  val get_fnc : bsp -> (bool * int) list list
+
+  val get_solution : bsp -> (bool * int) list option
+
+  val get_clue : bsp -> bsp
+
+  val has_solution : bsp -> bool
+
+  val is_solution : bsp -> bool
 
 end
 
