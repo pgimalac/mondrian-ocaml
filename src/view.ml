@@ -2,11 +2,18 @@ open Graphics
 open Geometry
 open Bsp
 
+let gap = 5
+let white_line_width = 5
+let colored_line_width = 3
+
 let window_width = 600
 let window_height = 700
 
-let board_width = float_of_int window_width
-let board_height = board_width
+let board_width_i = window_width
+let board_height_i = window_width
+
+let board_width = float_of_int board_width_i
+let board_height = float_of_int board_height_i
 
 exception Exit
 
@@ -183,11 +190,11 @@ module Make (B : Bsp_complete) : Bsp_view = struct
       set_color black;
       if B.has_solution board_width board_height !adjacency !bsp
       then begin
-        moveto ((window_width - w_has_sol) / 2) 605;
+        moveto ((window_width - w_has_sol) / 2) (board_height_i + gap);
         draw_string has_solution_msg
       end
       else begin
-        moveto ((window_width - w_no_sol) / 2) 605;
+        moveto ((window_width - w_no_sol) / 2) (board_height_i + gap);
         draw_string no_solution_msg
       end
     in
@@ -200,7 +207,7 @@ module Make (B : Bsp_complete) : Bsp_view = struct
       | [] ->
          clean_text ();
          set_color black;
-         moveto ((window_width - w_no_hist) / 2) 605;
+         moveto ((window_width - w_no_hist) / 2) (board_height_i + gap);
          draw_string no_history_msg
       | (pt, n) :: tl ->
         for i = 1 to n do
@@ -226,11 +233,11 @@ module Make (B : Bsp_complete) : Bsp_view = struct
         fill_poly poly)
       bsp board_width board_height;
     B.iter_line
-      (fun l -> draw_line white 5 l.section;
-             draw_line l.color 3 l.section)
+      (fun l -> draw_line white white_line_width l.section;
+             draw_line l.color colored_line_width l.section)
       bsp board_width board_height;
     let _, e = edges board_width board_height in
-    List.iter (fun x -> draw_line white 5 x; draw_line black 3 x) e
+    List.iter (fun x -> draw_line white white_line_width x; draw_line black colored_line_width x) e
 
   let plot () =
     List.iter (fun (btn, _) -> print_btn btn) interface_button;
