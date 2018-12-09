@@ -138,7 +138,7 @@ module Make (B : Bsp_type) = struct
   let colors bound_x bound_y bsp =
     let colors =
       fold bound_x bound_y
-        (fun _ left right -> left @ right)
+        (fun _ left right -> right @ left)
         (fun region -> [region.color])
         bsp
     in
@@ -200,8 +200,6 @@ module Make (B : Bsp_type) = struct
     iter_line
       (fun line ->
         let f = get_fnc_line line in
-        print_fnc f;
-        print_newline ();
         fnc := List.rev_append f !fnc)
       bsp bound_x bound_y;
     !fnc
@@ -212,9 +210,8 @@ module Make (B : Bsp_type) = struct
   let get_clue bound_x bound_y adjacency bsp =
     let sol = get_solution bound_x bound_y adjacency bsp in
     match sol with
-    | None -> print_endline "No solution."; None
+    | None -> None
     | Some s ->
-       print_endline "There is a solution.";
        let size = List.length s in
        if size > 0 then
          let n = Random.int size in

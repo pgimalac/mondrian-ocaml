@@ -208,10 +208,12 @@ module Make (B : Bsp_complete) : Bsp_view = struct
         let poly =
           Array.map
             (fun pt -> int_of_float pt.x, int_of_float pt.y) (Array.of_list pts)
-        in fill_poly poly)
+        in
+        fill_poly poly)
       bsp board_width board_height;
     B.iter_line
-      (fun l -> draw_line white 5 l.section; draw_line l.color 3 l.section)
+      (fun l -> draw_line white 5 l.section;
+             draw_line l.color 3 l.section)
       bsp board_width board_height;
     let _, e = edges board_width board_height in
     List.iter (fun x -> draw_line white 5 x; draw_line black 3 x) e
