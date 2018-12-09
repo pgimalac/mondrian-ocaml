@@ -2,7 +2,7 @@
  * View contains all graphics function
  *)
 
-(** Open a window and execute the given 
+(** Open a window and execute the given
     function each time an event is fired *)
 val do_with_window:
   ?title:string ->
@@ -13,7 +13,7 @@ val do_with_window:
   unit
 
 (** Differents types of gameplay
-    coincide with differents implentations of the 
+    coincide with differents implentations of the
     bsp modules *)
 type game_mode = Classic | Extrem
 

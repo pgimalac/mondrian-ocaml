@@ -1,4 +1,3 @@
-
 open Graphics
 open Geometry
 open Bsp
@@ -63,8 +62,7 @@ let print_btn ?(hover=false) btn =
   let w, h = text_size btn.text in
   moveto ((int_of_float btn.pt.x) + (btn.w - w) / 2)
     ((int_of_float btn.pt.y) + (btn.h - h) / 2);
-  draw_string btn.text;
-  ()
+  draw_string btn.text
 
 let create_button
       ?(bkg=green) ?(bkg_hover=red)
@@ -140,6 +138,10 @@ module Make (B : Bsp_complete) : Bsp_view = struct
   let adjacency = ref [| |]
   let history = ref []
 
+  let clean_text () =
+    set_color white;
+    fill_rect 0 window_width window_width 100
+
   let interface_button =
     let w = 100 in
     let h = 50 in
@@ -177,6 +179,7 @@ module Make (B : Bsp_complete) : Bsp_view = struct
       end
     in
     let sol_hdl () =
+      clean_text ();
       set_color black;
       if B.has_solution board_width board_height !adjacency !bsp
       then begin
@@ -195,6 +198,7 @@ module Make (B : Bsp_complete) : Bsp_view = struct
     let cancel_hdl () =
       match !history with
       | [] ->
+         clean_text ();
          set_color black;
          moveto ((window_width - w_no_hist) / 2) 605;
          draw_string no_history_msg
@@ -277,7 +281,8 @@ module Make (B : Bsp_complete) : Bsp_view = struct
                          x = float_of_int e.mouse_x;
                          y = float_of_int e.mouse_y};
             end
-          else if e.button then begin
+          else if e.button
+          then begin
               match List.find_opt (fun (btn, h) -> is_click btn e) interface_button with
               | Some (btn, h) -> h ()
               | _ -> ()
