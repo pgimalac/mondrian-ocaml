@@ -4,7 +4,7 @@ open Bsp
 
 module Bsp_extrem : Bsp_type = struct
   let min_area = 10000.
-               
+
   type bsp = R of region_label | L of line_label * bsp * bsp
 
   let fold bx by f g bsp =
@@ -26,7 +26,7 @@ module Bsp_extrem : Bsp_type = struct
          g region acc
     in
     aux bsp acc0
-       
+
   let region label = R label
 
   let node label left right = L(label, left, right)

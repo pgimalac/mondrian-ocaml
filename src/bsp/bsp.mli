@@ -109,13 +109,20 @@ module type Bsp_complete = sig
                     int list array -> bsp ->
                     bool
 
+  (** gives the center of the area whose number is given *)
+  val find_center : bsp -> float -> float -> int -> Geometry.point option
+
 end
 
 (** Construct a complete bsp from the minimum implementation *)
 module Make : functor (B : Bsp_type) -> Bsp_complete
+
+(** returns the index of the given color into the list, None if it isn't in *)
+val index : Graphics.color -> int option
 
 (** iter through colors, in reversed order if the given boolean is true *)
 val next_color : bool -> Graphics.color -> Graphics.color
 
 (** return a random color among non-white colors *)
 val rand_color : unit -> Graphics.color
+

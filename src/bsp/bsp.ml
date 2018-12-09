@@ -72,6 +72,8 @@ module type Bsp_complete = sig
                     int list array -> bsp ->
                     bool
 
+  val find_center : bsp -> float -> float -> int -> point option
+
 end
 
 module Make (B : Bsp_type) = struct
@@ -243,13 +245,34 @@ module Make (B : Bsp_type) = struct
           else if line.color = blue then r < b
           else r = b)
         bsp
+(*
+  val iter_area : (region_label -> point list -> unit) ->
+                  bsp -> float -> float -> unit
+*)
 
+  let find_center bsp bound_x bound_y n =
+    let opt = ref None in
+    iter_area
+      (fun label pts ->
+        if label.id = n
+        then opt := Some (center pts)
+      ) bsp bound_x bound_y;
+      !opt
 end
 
 let _ = Random.self_init ()
 
 let colors = [white; red; blue]
 let nb_color = (List.length colors) - 1
+
+let index color =
+  let rec iter acc l = match l with
+    | h :: q ->
+      if h = color
+      then Some acc
+      else iter (acc + 1) q
+    | [] -> None
+  in iter 0 colors
 
 let next_color reverse c =
   let rec aux tab =

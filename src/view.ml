@@ -1,3 +1,4 @@
+
 open Graphics
 open Geometry
 open Bsp
@@ -165,7 +166,15 @@ module Make (B : Bsp_complete) : Bsp_view = struct
       let x = B.get_clue board_width board_height !adjacency !bsp in
       match x with
       | None -> ()
-      | Some (n, c) -> bsp := B.color_nth board_width board_height !bsp n c
+      | Some (n, c) -> begin
+        match Bsp.index c, B.find_center !bsp board_width board_height n with
+        | _, None -> failwith "Help : incorrect zone number"
+        | None, _ -> failwith "Help : incorrect color"
+        | Some i, _ when i < 1 -> failwith "Help : incorrect color"
+        | Some i, Some pt ->
+          history := (pt, i) :: !history;
+          bsp := B.color_nth board_width board_height !bsp n c
+      end
     in
     let sol_hdl () =
       set_color black;
@@ -189,9 +198,11 @@ module Make (B : Bsp_complete) : Bsp_view = struct
          set_color black;
          moveto ((window_width - w_no_hist) / 2) 605;
          draw_string no_history_msg
-      | pt :: tl ->
-         bsp := B.change_color ~reverse:true !bsp pt;
-         history := tl;
+      | (pt, n) :: tl ->
+        for i = 1 to n do
+          bsp := B.change_color ~reverse:true !bsp pt
+        done;
+        history := tl;
     in
     List.mapi (fun i (btn, h) -> (btn i, h))
       [quit_btn, quit_hdl;
@@ -259,9 +270,9 @@ module Make (B : Bsp_complete) : Bsp_view = struct
           if (float_of_int e.mouse_x) < board_width &&
                (float_of_int e.mouse_y) < board_height
           then begin
-              history := {
+              history := ({
                 x = float_of_int e.mouse_x;
-                y = float_of_int e.mouse_y} :: !history;
+                y = float_of_int e.mouse_y}, 1) :: !history;
               bsp := B.change_color !bsp {
                          x = float_of_int e.mouse_x;
                          y = float_of_int e.mouse_y};

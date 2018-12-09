@@ -8,10 +8,10 @@ module Bsp_classic : Bsp_type = struct
       section : float;
       id      : int;
     }
-  
+
   type bsp = L of label * bsp * bsp | R of region_label
 
-  let pp v pt1 pt2 depth = 
+  let pp v pt1 pt2 depth =
     if depth mod 2 = 0
     then
       {pt1 = {x = v.section; y = pt2.y}; pt2 = {x = v.section; y = pt1.y}},
@@ -21,7 +21,7 @@ module Bsp_classic : Bsp_type = struct
       {pt1 = {x = pt2.x; y = v.section}; pt2 = {x = pt1.x; y = v.section}},
       (pt1, {x = pt2.x; y = v.section}),
       ({x = pt1.x; y = v.section}, pt2)
-                                         
+
   let change_color ?(reverse=false) bsp pt =
     let rec change_color_depth bsp pt depth =
       match bsp with
@@ -86,8 +86,8 @@ module Bsp_classic : Bsp_type = struct
       section = line;
       color = v.color;
       id = v.id;
-    } 
-    
+    }
+
   let fold bound_x bound_y f g bsp =
     let rec fold_depth bsp (pt1, pt2) depth =
       match bsp with
