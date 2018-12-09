@@ -69,29 +69,42 @@ module type Bsp_complete = sig
   (** set unique id for each region and line *)
   val init : float -> float -> bsp -> bsp
 
+  (** To use following function, the bsp must be initialized *)
+
   (** return an array containing at index i the color of the associated region *)
   val colors : float -> float -> bsp -> int array
 
+  (** change the colors of the region with the given ID *)
   val color_nth : float -> float ->
                   bsp -> int -> Graphics.color ->
                   bsp
 
+  (** generate an conjonctive normal form representing
+      the problem of his coloration
+      Should this function be in the interface ?
+      TODO: add some details here  *)
   val get_fnc : float -> float ->
                 int list array -> bsp ->
                 (bool * int) list list
 
+  (** for a given bsp return a coloration if it exists
+      return None otherwise *)
   val get_solution : float -> float ->
                      int list array -> bsp ->
                      (bool * int) list option
 
+  (** for a given bsp return a region id and a color leading to a solution
+      if no solution exists return None *)
   val get_clue : float -> float ->
                  int list array -> bsp ->
                  (int * Graphics.color) option
 
+  (** return true iff the given bsp can be completed in a valid coloration *)
   val has_solution : float -> float ->
                      int list array -> bsp ->
                      bool
 
+  (** return true iff the given bsp is fully and correctly colored *)
   val is_solution : float -> float ->
                     int list array -> bsp ->
                     bool

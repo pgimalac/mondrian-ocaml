@@ -166,7 +166,6 @@ module Make (B : Bsp_complete) : Bsp_view = struct
       match x with
       | None -> ()
       | Some (n, c) -> bsp := B.color_nth board_width board_height !bsp n c
-      (* change to make the zone blink *)
     in
     let sol_hdl () =
       set_color black;

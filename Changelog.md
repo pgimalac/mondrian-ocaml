@@ -1,7 +1,7 @@
 Changelog
 =========
 
-## PR #5 Basic
+### PR #5 Basic
 
 * Add Changelog
 * Implement the subject version of the Bsp in `Bsp_classic` module.
@@ -14,3 +14,9 @@ Changelog
 * Add Functor `Bsp_complete` implementing generic function based on a `Bsp_type`
 * Line coloration
 * Use `line_label` and `region_label` in Bsp for more modularity and readability
+
+### PR #11 Implement help & check functions, find fnc, use sat solver
+
+* Implements handlers for _Help_ and _Exists solution_ buttons
+* Generate fnc representing the game status and solve with the sat solver
+* Fix line coloration

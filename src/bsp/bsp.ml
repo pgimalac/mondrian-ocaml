@@ -190,19 +190,16 @@ module Make (B : Bsp_type) = struct
         then Logic.tautology
         else Logic.at_least boo k l
     in
-    let fnc = ref [] in
-    iter bound_x bound_y
-      (fun _ () -> (), ())
-      (fun r () ->
+    fold bound_x bound_y
+      (fun line left right ->
+        get_fnc_line line
+        |> List.rev_append left
+        |> List.rev_append right)
+      (fun r ->
         if r.color = white
-        then fnc := [(true, r.id); (false, r.id)] :: !fnc)
-      () bsp;
-    iter_line
-      (fun line ->
-        let f = get_fnc_line line in
-        fnc := List.rev_append f !fnc)
-      bsp bound_x bound_y;
-    !fnc
+        then [[(true, r.id); (false, r.id)]]
+        else [])
+      bsp
 
   let get_solution bound_x bound_y adjacency bsp =
     SOLVER.solve (get_fnc bound_x bound_y adjacency bsp)
