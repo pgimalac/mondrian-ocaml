@@ -85,13 +85,13 @@ module type Bsp_complete = sig
       TODO: add some details here  *)
   val get_fnc : float -> float ->
                 int list array -> bsp ->
-                (bool * int) list list
+                (bool * (int * Graphics.color)) list list
 
   (** for a given bsp return a coloration if it exists
       return None otherwise *)
   val get_solution : float -> float ->
                      int list array -> bsp ->
-                     (bool * int) list option
+                     (bool * (int * Graphics.color)) list option
 
   (** for a given bsp return a region id and a color leading to a solution
       if no solution exists return None *)

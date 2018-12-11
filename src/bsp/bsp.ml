@@ -3,8 +3,10 @@ open Geometry
 open Sat_solver
 
 module SOLVER = Make (struct
-  type t = int
-  let compare a b = a - b
+  type t = int * color
+  let compare (i1, c1) (i2, c2) =
+    if i1 = i2 then c1 - c2
+    else i1 - i2
 end)
 
 module type Bsp_type = sig
@@ -54,11 +56,11 @@ module type Bsp_complete = sig
 
   val get_fnc : float -> float ->
                 int list array -> bsp ->
-                (bool * int) list list
+                (bool * (int * color)) list list
 
   val get_solution : float -> float ->
                      int list array -> bsp ->
-                     (bool * int) list option
+                     (bool * (int * color)) list option
 
   val get_clue : float -> float ->
                  int list array -> bsp ->
@@ -125,26 +127,21 @@ module Make (B : Bsp_type) = struct
   let init bound_x bound_y bsp =
     let i = ref (-1) in
     let j = ref (-1) in
-    let t =
-      fold bound_x bound_y
-        (fun l left right ->
-          j := !j + 1;
-          node {l with id = !j} left right)
-        (fun r ->
-          i := !i + 1;
-          region {r with id = !i})
-        bsp
-    in
-    t
+    fold bound_x bound_y
+      (fun l left right ->
+        j := !j + 1;
+        node {l with id = !j} left right)
+      (fun r ->
+        i := !i + 1;
+        region {r with id = !i})
+      bsp
 
   let colors bound_x bound_y bsp =
-    let colors =
-      fold bound_x bound_y
-        (fun _ left right -> right @ left)
-        (fun region -> [region.color])
-        bsp
-    in
-    Array.of_list colors
+    let size = ref (-2) in
+    iter_area (fun region _ -> size := max !size region.id) bsp bound_x bound_y;
+    let colors = Array.make (!size + 1) white in
+    iter_area (fun region _ -> colors.(region.id) <- region.color) bsp bound_x bound_y;
+    colors
 
   let color_nth bound_x bound_y bsp id color =
     fold bound_x bound_y
@@ -168,40 +165,60 @@ module Make (B : Bsp_type) = struct
 
   let get_fnc bound_x bound_y adjacency bsp =
     let region_colors = colors bound_x bound_y bsp in
-    let get_fnc_line (line: line_label) =
-      let regions = adjacency.(line.id) in
-      let size, r, b, l =
-        List.fold_left
-          (fun (s, r, b, l) id ->
-            let color = region_colors.(id) in
-            s + 1,
-            r + (if color = red then 1 else 0),
-            b + (if color = blue then 1 else 0),
-            if color = white then id :: l else l)
-          (0, 0, 0, []) regions in
-      if line.color = green
-      then
-          let nbR = (size / 2 - r) in
-          if size mod 2 = 0 && nbR >= 0
-          then Logic.split true nbR l
-          else Logic.antilogy
+    let get_fnc_line (line:line_label) =
+      if line.color = black
+      then Logic.tautology
       else
-        let boo = (line.color = red) in
-        let k = size / 2 + 1 - (if boo then r else b) in
-        if k < 0
-        then Logic.tautology
-        else Logic.at_least boo k l
+        let regions = adjacency.(line.id) in
+        let size, r, g, b, l =
+          List.fold_left
+            (fun (s, r, b, g, l) id ->
+              let color = region_colors.(id) in
+              s + 1,
+              r + (if color = red then 1 else 0),
+              g + (if color = green then 1 else 0),
+              b + (if color = blue then 1 else 0),
+              if color = white then id :: l else l)
+            (0, 0, 0, 0, []) regions in
+        let num = Logic.number_of_colors line.color in
+        if num = 1
+        then
+          let min = (size + 1) / 2 in
+          if line.color = Graphics.red
+          then Logic.get_red (min - r) l
+          else if line.color = Graphics.green
+          then Logic.get_green (min - g) l
+          else Logic.get_blue (min - b) l
+        else if num = 2
+        then
+          let min = (size + 3) / 4 in
+          let max = size / 2 in
+          let max2 = ((size - 1) / 4) in
+          if line.color = yellow
+          then Logic.get_yellow (min - r) (max - r) (min - g) (max - g) (max2 - b) l
+          else if line.color = magenta
+          then Logic.get_magenta (min - r) (max - r) (min - b) (max - b) (max2 - g) l
+          else Logic.get_cyan (min - g) (max - g) (min - b) (max - b) (max2 - r) l
+        else if num = 3
+        then
+          let min = (size + 3) / 4 in
+          let max = size / 2 in
+          Logic.get_black (min - r) (max - r) (min - g) (max - g) (min - b) (max - b) l
+        else Logic.tautology (* black *)
     in
-    fold bound_x bound_y
-      (fun line left right ->
-        get_fnc_line line
-        |> List.rev_append left
-        |> List.rev_append right)
-      (fun r ->
-        if r.color = white
-        then [[(true, r.id); (false, r.id)]]
-        else [])
-      bsp
+    let fnc = ref [] in
+    iter bound_x bound_y
+      (fun line _ ->
+        fnc :=
+          get_fnc_line line
+          |> List.rev_append !fnc;
+        (0,0)
+      ) (fun r _ ->
+        fnc := if r.color = white
+        then Logic.basics r.id
+        else []
+        |> List.rev_append !fnc
+      ) 0 bsp; !fnc
 
   let get_solution bound_x bound_y adjacency bsp =
     SOLVER.solve (get_fnc bound_x bound_y adjacency bsp)
@@ -211,13 +228,13 @@ module Make (B : Bsp_type) = struct
     match sol with
     | None -> None
     | Some s ->
-       let size = List.length s in
-       if size > 0 then
-         let n = Random.int size in
-         let (b, i) = List.nth s n in
-         let c = if b then red else blue in
-         Some (i, c)
-       else None
+      let size, sol = List.fold_left (fun (s,l) (b, (i, col)) ->
+        if b then (s + 1, (i, col) :: l) else (s, l)
+      ) (0, []) s in
+      if size > 0 then
+        let n = Random.int size in
+        Some (List.nth sol n)
+      else None
 
   let has_solution bound_x bound_y adjacency bsp =
     (get_solution bound_x bound_y adjacency bsp) <> None
@@ -262,7 +279,7 @@ end
 
 let _ = Random.self_init ()
 
-let colors = [white; red; blue]
+let colors = [white; red; green; blue]
 let nb_color = (List.length colors) - 1
 
 let index color =

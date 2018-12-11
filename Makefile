@@ -1,5 +1,5 @@
 NAME = mondrian
-SOURCES = geometry.ml logic.ml sat_solver.ml \
+SOURCES = sat_solver.ml geometry.ml logic.ml \
 		  bsp/bsp.ml bsp/extrem.ml bsp/classic.ml \
 		  view.ml main.ml
 

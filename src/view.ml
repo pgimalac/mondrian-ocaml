@@ -3,7 +3,7 @@ open Geometry
 open Bsp
 
 let gap = 5
-let white_line_width = 5
+let wrap_line_width = 5
 let colored_line_width = 3
 
 let window_width = 600
@@ -14,6 +14,9 @@ let board_height_i = window_width
 
 let board_width = float_of_int board_width_i
 let board_height = float_of_int board_height_i
+
+(* the probability of a black line is 1 / black_probability *)
+let black_probability = 25
 
 exception Exit
 
@@ -233,11 +236,11 @@ module Make (B : Bsp_complete) : Bsp_view = struct
         fill_poly poly)
       bsp board_width board_height;
     B.iter_line
-      (fun l -> draw_line white white_line_width l.section;
+      (fun l -> draw_line black wrap_line_width l.section;
              draw_line l.color colored_line_width l.section)
       bsp board_width board_height;
     let _, e = edges board_width board_height in
-    List.iter (fun x -> draw_line white white_line_width x; draw_line black colored_line_width x) e
+    List.iter (fun x -> draw_line black wrap_line_width x; draw_line black colored_line_width x) e
 
   let plot () =
     List.iter (fun (btn, _) -> print_btn btn) interface_button;
@@ -250,23 +253,32 @@ module Make (B : Bsp_complete) : Bsp_view = struct
     bsp :=
       B.fold board_width board_height
         (fun line left right ->
-          let r, b =
+          let size, r, g, b =
             List.fold_left
-              (fun (r, b) id ->
+              (fun (s, r, g, b) id ->
                 if colors.(id) = red
-                then r + 1, b
-                else if colors.(id) = blue
-                then r, b + 1
-                else r, b)
-              (0, 0)
+                then s + 1, r + 1, g, b
+                else if colors.(id) = green
+                then s + 1, r, g + 1, b
+                else s + 1, r, g, b + 1)
+              (0, 0, 0, 0)
               !adjacency.(line.id)
           in
           let label =
-            if r > b
-            then {line with color = red}
-            else if r < b
-            then {line with color = blue}
-            else {line with color = green}
+            if (Random.int black_probability == 0)
+            then {line with color = black}
+            else
+              if 2 * r > size
+              then {line with color = red}
+              else if 2 * b > size
+              then {line with color = blue}
+              else if 2 * g > size
+              then {line with color = green}
+              else
+                let c = (if 4 * r >= size then red else 0) +
+                        (if 4 * g >= size then green else 0) +
+                        (if 4 * b >= size then blue else 0)
+                in {line with color = c}
           in
           B.node label left right)
         B.region
