@@ -41,30 +41,33 @@ let at_most (c:Graphics.color) k l =
   let f = (fun (i:int) -> (false, (i, c))) in
   subsets f (k + 1) l
 
-let one_colored c1 min1 l =
-  if min1 <= 0
+let one_colored c1 s n1 l =
+  let min = (s + 1) / 2 in
+  if min <= n1
   then tautology
-  else at_least c1 min1 l
+  else at_least c1 (min - n1) l
 
-let get_red =
-  one_colored Graphics.red
+let get_red s r _ _ =
+  one_colored Graphics.red s r
 
-let get_green =
-  one_colored Graphics.green
+let get_green s _ g _ =
+  one_colored Graphics.green s g
 
-let get_blue =
-  one_colored Graphics.blue
+let get_blue s _ _ b =
+  one_colored Graphics.blue s b
 
 (* c1 and c2 are the main colors, c3 the third one *)
-let two_colored c1 c2 c3 min1 max1 min2 max2 max3 l =
-  if max1 < 0 || max2 < 0 || max3 < 0 || min1 > max1 || min2 > max2
+let two_colored c1 c2 c3 s n1 n2 n3 l =
+  let min = (s + 3) / 4 in
+  let max = s / 2 in
+  if max < n1 || max < n2 || min - 1 < n3
   then antilogy
   else
-    let x1min = if min1 <= 0 then [] else at_least c1 min1 l in
-    let x2min = if min2 <= 0 then [] else at_least c2 min2 l in
-    let x1max = at_most c1 max1 l in
-    let x2max = at_most c2 max2 l in
-    let x3max = at_most c3 max3 l in
+    let x1min = if min <= n1 then tautology else at_least c1 (min - n1) l in
+    let x2min = if min <= n2 then tautology else at_least c2 (min - n2) l in
+    let x1max = at_most c1 (max - n1) l in
+    let x2max = at_most c2 (max - n2) l in
+    let x3max = at_most c3 (min - 1 - n3) l in
     List.rev_append x1min (
       List.rev_append x1max (
         List.rev_append x2min (
@@ -73,14 +76,14 @@ let two_colored c1 c2 c3 min1 max1 min2 max2 max3 l =
       )
     )
 
-let get_yellow =
-  two_colored Graphics.red Graphics.green Graphics.blue
+let get_yellow s r g b =
+  two_colored Graphics.red Graphics.green Graphics.blue s r g b
 
-let get_magenta =
-  two_colored Graphics.red Graphics.blue Graphics.green
+let get_magenta s r g b =
+  two_colored Graphics.red Graphics.blue Graphics.green s r b g
 
-let get_cyan =
-  two_colored Graphics.green Graphics.blue Graphics.red
+let get_cyan s r g b =
+  two_colored Graphics.green Graphics.blue Graphics.red s g b r
 
 let three_colored c1 c2 c3 min1 max1 min2 max2 min3 max3 l =
   if max1 < 0 || max2 < 0 || max3 < 0 || min1 > max1 || min2 > max2 || min3 > max3
@@ -102,12 +105,21 @@ let three_colored c1 c2 c3 min1 max1 min2 max2 min3 max3 l =
       )
     )
 
-let get_black =
+let get_white s r g b l =
+  let min = (s + 3) / 4 in
+  let max = (s + 1) / 2 in
   three_colored Graphics.red Graphics.green Graphics.blue
+    (min - r) (max - r) (min - g) (max - g) (min - b) (max - b) l
 
-let number_of_colors c =
-  let n = ref 0 in
-  if c / 65536 <> 0 then n := !n + 1; (* r *)
-  if (c / 256) mod 256 <> 0 then n := !n + 1; (* g *)
-  if c mod 256 <> 0 then n := !n + 1; (* b *)
-  !n
+let get_black _ _ _ _ _ = tautology
+
+let get_function_color color =
+  if color = Graphics.white then get_white
+  else if color = Graphics.black then get_black
+  else if color = Graphics.red then get_red
+  else if color = Graphics.green then get_green
+  else if color = Graphics.blue then get_blue
+  else if color = Graphics.yellow then get_yellow
+  else if color = Graphics.magenta then get_magenta
+  else if color = Graphics.cyan then get_cyan
+  else failwith "get_function_color : unknown color"

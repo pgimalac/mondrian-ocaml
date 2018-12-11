@@ -169,7 +169,6 @@ module Make (B : Bsp_type) = struct
       if line.color = black
       then Logic.tautology
       else
-        let regions = adjacency.(line.id) in
         let size, r, g, b, l =
           List.fold_left
             (fun (s, r, b, g, l) id ->
@@ -179,32 +178,9 @@ module Make (B : Bsp_type) = struct
               g + (if color = green then 1 else 0),
               b + (if color = blue then 1 else 0),
               if color = white then id :: l else l)
-            (0, 0, 0, 0, []) regions in
-        let num = Logic.number_of_colors line.color in
-        if num = 1
-        then
-          let min = (size + 1) / 2 in
-          if line.color = Graphics.red
-          then Logic.get_red (min - r) l
-          else if line.color = Graphics.green
-          then Logic.get_green (min - g) l
-          else Logic.get_blue (min - b) l
-        else if num = 2
-        then
-          let min = (size + 3) / 4 in
-          let max = size / 2 in
-          let max2 = ((size - 1) / 4) in
-          if line.color = yellow
-          then Logic.get_yellow (min - r) (max - r) (min - g) (max - g) (max2 - b) l
-          else if line.color = magenta
-          then Logic.get_magenta (min - r) (max - r) (min - b) (max - b) (max2 - g) l
-          else Logic.get_cyan (min - g) (max - g) (min - b) (max - b) (max2 - r) l
-        else if num = 3
-        then
-          let min = (size + 3) / 4 in
-          let max = size / 2 in
-          Logic.get_black (min - r) (max - r) (min - g) (max - g) (min - b) (max - b) l
-        else Logic.tautology (* black *)
+            (0, 0, 0, 0, []) adjacency.(line.id) in
+        let f = Logic.get_function_color line.color in
+        f size r g b l
     in
     let fnc = ref [] in
     iter bound_x bound_y
@@ -221,7 +197,8 @@ module Make (B : Bsp_type) = struct
       ) 0 bsp; !fnc
 
   let get_solution bound_x bound_y adjacency bsp =
-    SOLVER.solve (get_fnc bound_x bound_y adjacency bsp)
+    get_fnc bound_x bound_y adjacency bsp
+    |> SOLVER.solve
 
   let get_clue bound_x bound_y adjacency bsp =
     let sol = get_solution bound_x bound_y adjacency bsp in
