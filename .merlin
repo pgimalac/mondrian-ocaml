@@ -1,2 +1,7 @@
 S src/
 S src/bsp
+S src/view
+
+B src/
+B src/bsp
+B src/view

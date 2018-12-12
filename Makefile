@@ -1,22 +1,19 @@
 NAME = mondrian
 SOURCES = geometry.ml logic.ml sat_solver.ml \
 		  bsp/bsp.ml bsp/extrem.ml bsp/classic.ml \
-		  view.ml main.ml
+		  interface.ml view/bsp_view.ml view/menu.ml main.ml
 
 FOLDER = src/
 SOURCES_FP = $(addprefix $(FOLDER), $(SOURCES))
 
 CAMLC = ocamlc
 LIBS = graphics.cma
-FLAGS = -g -I src/ -I src/bsp
+FLAGS = -I src/ -I src/bsp -I src/view
 
 all: $(NAME)
 
 OBJ = $(SOURCES_FP:.ml=.cmo)
 OBJI = $(SOURCES_FP:.ml=.cmi)
-
-p:
-	@echo $(OBJ)
 
 %.cmo: %.mli %.ml
 	$(CAMLC) $(FLAGS) $(LIBS) -c $? -o $@

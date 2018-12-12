@@ -1,25 +1,34 @@
-open Bsp
-open Classic
-open Extrem
-open View
+open Graphics
+open Interface
 
-let rec handler = ref select_mode
+let open_window
+      ?(title=" Mondrian")
+      ?(width=window_width)
+      ?(height=window_height)
+      () =
+  open_graph (" " ^
+                (string_of_int width) ^ "x" ^
+                  (string_of_int height));
 
-and select_mode st =
-  match menu (Some st) with
-  | None -> ()
-  | Some Classic ->
-     let module B = View.Make (Classic.Bsp) in
-     handler := B.view ();
-     B.plot ()
-  | Some Extrem ->
-     let module B = View.Make (Extrem.Bsp) in
-     handler := B.view ();
-     B.plot ()
+  set_window_title title;
+  synchronize ();
 
-let main () =
-  do_with_window
-    ~on_open:(fun () -> ignore(menu None))
-    (fun e -> !handler e)
+  let page = ref Menu.menu in
+  Menu.show_on_open ();
 
-let _ = main ()
+  let rec loop () =
+    let e = wait_next_event [Mouse_motion; Button_down] in
+    let _ =
+      match !page.handler e with
+      | Some p -> page := p;
+      | None -> ()
+    in
+    loop ()
+  in
+
+  try
+    loop ();
+  with Exit -> ();
+  close_graph ()
+
+let _ = open_window ()
