@@ -137,9 +137,9 @@ module Make (B : Bsp_type) = struct
       bsp
 
   let colors bound_x bound_y bsp =
-    let size = ref (-2) in
-    iter_area (fun region _ -> size := max !size region.id) bsp bound_x bound_y;
-    let colors = Array.make (!size + 1) white in
+    let size = ref 0 in
+    iter_area (fun region _ -> size := !size + 1) bsp bound_x bound_y;
+    let colors = Array.make !size white in
     iter_area (fun region _ -> colors.(region.id) <- region.color) bsp bound_x bound_y;
     colors
 
@@ -152,13 +152,40 @@ module Make (B : Bsp_type) = struct
         else region r)
     bsp
 
+  let print_color color = (* for debug purpose *)
+    print_string (
+      if color = white then "white"
+      else if color = black then "black"
+      else if color = red then "red"
+      else if color = green then "green"
+      else if color = blue then "blue"
+      else if color = yellow then "yellow"
+      else if color = cyan then "cyan"
+      else if color = magenta then "magenta"
+      else "unknown color"
+    )
+
+  let print_adjacency (line:line_label) colors adjacency = (* for debug purpose *)
+    print_color line.color;
+    print_string " : ";
+    List.iter (fun i ->
+      print_string "(";
+      print_int i;
+      print_string ", ";
+      print_color colors.(i);
+      print_string ") ";
+    ) adjacency.(line.id);
+    print_newline ()
+
   let print_fnc f = (* for debug purpose *)
     List.iter (fun x ->
         print_string "[";
-        List.iter (fun (b, n) ->
+        List.iter (fun (b, (n, c)) ->
+            print_int n;
+            print_string " ";
             if not b
             then print_string "not ";
-            print_int n; print_string " ") x;
+            print_color c; print_string " ou ") x;
         print_string "] et ";
       ) f;
     print_newline ()
@@ -166,35 +193,30 @@ module Make (B : Bsp_type) = struct
   let get_fnc bound_x bound_y adjacency bsp =
     let region_colors = colors bound_x bound_y bsp in
     let get_fnc_line (line:line_label) =
-      if line.color = black
-      then Logic.tautology
-      else
-        let size, r, g, b, l =
-          List.fold_left
-            (fun (s, r, b, g, l) id ->
-              let color = region_colors.(id) in
-              s + 1,
-              r + (if color = red then 1 else 0),
-              g + (if color = green then 1 else 0),
-              b + (if color = blue then 1 else 0),
-              if color = white then id :: l else l)
-            (0, 0, 0, 0, []) adjacency.(line.id) in
-        let f = Logic.get_function_color line.color in
-        f size r g b l
+      let size, r, g, b, l =
+        List.fold_left
+          (fun (s, r, g, b, l) id ->
+            let color = region_colors.(id) in
+            s + 1,
+            r + (if color = red then 1 else 0),
+            g + (if color = green then 1 else 0),
+            b + (if color = blue then 1 else 0),
+            if color = white then id :: l else l)
+          (0, 0, 0, 0, []) adjacency.(line.id) in
+      let f = Logic.get_function_color line.color in
+      f size r g b l
     in
     let fnc = ref [] in
     iter bound_x bound_y
       (fun line _ ->
-        fnc :=
-          get_fnc_line line
-          |> List.rev_append !fnc;
+        fnc := List.rev_append (get_fnc_line line) !fnc;
         (0,0)
       ) (fun r _ ->
-        fnc := if r.color = white
-        then Logic.basics r.id
-        else []
-        |> List.rev_append !fnc
-      ) 0 bsp; !fnc
+        if r.color = white
+        then fnc := List.rev_append (Logic.basics r.id) !fnc
+      ) 0 bsp;
+    print_endline "done"; flush stdout;
+    !fnc
 
   let get_solution bound_x bound_y adjacency bsp =
     get_fnc bound_x bound_y adjacency bsp

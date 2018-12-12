@@ -1,10 +1,8 @@
-let antilogy = [[(true, (0, Graphics.red))]; [(false, (0, Graphics.red))]]
+let antilogy = [[(true, (-1, Graphics.black))]; [(false, (-1, Graphics.black))]]
 let tautology = []
 
 (* all subsets of l of size k *)
 let subsets f k l =
-(* not tail-recursive but heap space linear to the size of l *)
-(* so less than the number of areas -- so ok *)
   let e = ref [] in
   let l =
     List.fold_left (fun acc h ->
@@ -19,7 +17,7 @@ let subsets f k l =
       ) [(0, [])] l
   in
   List.iter (fun (n, l) -> if n = k then e := l :: !e) l;
-  if !e = [] then antilogy else !e
+  !e
 
 let basics n =
   [
@@ -41,8 +39,9 @@ let at_most (c:Graphics.color) k l =
   let f = (fun (i:int) -> (false, (i, c))) in
   subsets f (k + 1) l
 
+(* red/green/blue means the color is strictly more than half of areas *)
 let one_colored c1 s n1 l =
-  let min = (s + 1) / 2 in
+  let min = s / 2 + 1 in
   if min <= n1
   then tautology
   else at_least c1 (min - n1) l
@@ -56,7 +55,7 @@ let get_green s _ g _ =
 let get_blue s _ _ b =
   one_colored Graphics.blue s b
 
-(* c1 and c2 are the main colors, c3 the third one *)
+(* yellow/cyan/magenta means two colors are at least a quarter of areas and at most an half, the third is strictly less than a quarter *)
 let two_colored c1 c2 c3 s n1 n2 n3 l =
   let min = (s + 3) / 4 in
   let max = s / 2 in
@@ -68,13 +67,10 @@ let two_colored c1 c2 c3 s n1 n2 n3 l =
     let x1max = at_most c1 (max - n1) l in
     let x2max = at_most c2 (max - n2) l in
     let x3max = at_most c3 (min - 1 - n3) l in
-    List.rev_append x1min (
-      List.rev_append x1max (
-        List.rev_append x2min (
-          List.rev_append x2max x3max
-        )
-      )
-    )
+    List.rev_append x2max x3max
+    |> List.rev_append x1max
+    |> List.rev_append x2min
+    |> List.rev_append x1min
 
 let get_yellow s r g b =
   two_colored Graphics.red Graphics.green Graphics.blue s r g b
@@ -85,31 +81,17 @@ let get_magenta s r g b =
 let get_cyan s r g b =
   two_colored Graphics.green Graphics.blue Graphics.red s g b r
 
-let three_colored c1 c2 c3 min1 max1 min2 max2 min3 max3 l =
-  if max1 < 0 || max2 < 0 || max3 < 0 || min1 > max1 || min2 > max2 || min3 > max3
-  then antilogy
-  else
-    let x1min = if min1 <= 0 then tautology else at_least c1 min1 l in
-    let x2min = if min2 <= 0 then tautology else at_least c2 min2 l in
-    let x3min = if min3 <= 0 then tautology else at_least c3 min3 l in
-    let x1max = at_most c1 max1 l in
-    let x2max = at_most c2 max2 l in
-    let x3max = at_most c3 max3 l in
-    List.rev_append x1min (
-      List.rev_append x2min (
-        List.rev_append x3min (
-          List.rev_append x1max (
-            List.rev_append x2max x3max
-          )
-        )
-      )
-    )
-
 let get_white s r g b l =
   let min = (s + 3) / 4 in
-  let max = (s + 1) / 2 in
-  three_colored Graphics.red Graphics.green Graphics.blue
-    (min - r) (max - r) (min - g) (max - g) (min - b) (max - b) l
+  let max = s / 2 in
+  if max < r || max < g || max < b
+  then antilogy
+  else
+    let rmin = if min <= r then tautology else at_least Graphics.red (min - r) l in
+    let gmin = if min <= g then tautology else at_least Graphics.green (min - g) l in
+    let bmin = if min <= b then tautology else at_least Graphics.blue (min - b) l in
+    List.rev_append gmin bmin
+    |> List.rev_append rmin
 
 let get_black _ _ _ _ _ = tautology
 

@@ -265,7 +265,7 @@ module Make (B : Bsp_complete) : Bsp_view = struct
               !adjacency.(line.id)
           in
           let label =
-            if (Random.int black_probability == 0)
+            if (Random.int black_probability = 0)
             then {line with color = black}
             else
               if 2 * r > size
