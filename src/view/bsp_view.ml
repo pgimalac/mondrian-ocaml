@@ -8,7 +8,6 @@ let white_line_width = 5
 let colored_line_width = 3
 
 let show_win_page st =
-  clear_graph ();
   set_color black;
   moveto 100 100;
   draw_string "winner"
@@ -111,9 +110,7 @@ module Make (S : Game_settings) (B : Bsp_complete) : Bsp_view = struct
   let has_solution_msg = "There is a solution"
   let w_has_sol, h_has_sol = text_size has_solution_msg
 
-  let clean_text () =
-    set_color white;
-    fill_rect 0 window_width window_width 20
+  let text = ref ""
 
   let help_hdl () =
     let x = B.get_clue board_width board_height !adjacency !bsp in
@@ -131,23 +128,13 @@ module Make (S : Game_settings) (B : Bsp_complete) : Bsp_view = struct
     in
     if is_win ()
     then Some (win_page ())
-    else begin
-        plot_bsp !bsp;
-        None
-      end
+    else None
 
   let sol_hdl () =
-    set_color black;
-    if B.has_solution board_width board_height !adjacency !bsp
-    then begin
-        moveto ((window_width - w_has_sol) / 2) (board_height_i + gap);
-        draw_string has_solution_msg;
-      end
-    else begin
-        moveto ((window_width - w_no_sol) / 2) (board_height_i + gap);
-        draw_string no_solution_msg;
-      end;
-    plot_bsp !bsp;
+    text :=
+      if B.has_solution board_width board_height !adjacency !bsp
+      then has_solution_msg
+      else no_solution_msg;
     None
 
   let quit_hdl () = raise Exit
@@ -155,22 +142,18 @@ module Make (S : Game_settings) (B : Bsp_complete) : Bsp_view = struct
   let clean_hdl () =
     history := [];
     bsp := B.clean board_width board_height !bsp;
-    plot_bsp !bsp;
     None
 
   let cancel_hdl () =
     let _ = match !history with
       | [] ->
-         set_color black;
-         moveto ((window_width - w_no_hist) / 2) (board_height_i + gap);
-         draw_string no_history_msg;
+         text := no_history_msg;
       | (pt, n) :: tl ->
          for i = 1 to n do
            bsp := B.change_color ~reverse:true !bsp pt
          done;
          history := tl;
     in
-    plot_bsp !bsp;
     None
 
   let interface_button =
@@ -182,6 +165,11 @@ module Make (S : Game_settings) (B : Bsp_complete) : Bsp_view = struct
        sol_btn, sol_hdl]
 
   let plot st =
+    set_color black;
+    let w, h = text_size !text in
+    moveto ((window_width - w) / 2) (board_height_i + gap);
+    draw_string !text;
+
     show_buttons st interface_button;
     plot_bsp !bsp
 
@@ -221,14 +209,14 @@ module Make (S : Game_settings) (B : Bsp_complete) : Bsp_view = struct
           bsp := B.change_color !bsp {
                      x = float_of_int e.mouse_x;
                      y = float_of_int e.mouse_y};
-          plot e;
+          text := "";
           if is_win ()
           then Some (win_page ())
           else None
         end
       else match List.find_opt (fun (btn, h) -> is_click btn e) interface_button with
            | Some (btn, h) ->
-              clean_text ();
+              text := "";
               h ()
            | _ -> None
     in hdl

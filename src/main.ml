@@ -22,6 +22,7 @@ let open_window
     synchronize ();
     let e = wait_next_event [Mouse_motion; Button_down] in
     let _ =
+      clear_graph ();
       match !page.handler e with
       | Some p -> page := p;
       | None -> ()

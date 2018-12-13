@@ -2,11 +2,11 @@ open Graphics
 open Interface
 open Bsp_view
 
-let min_area = 20
-let max_area = 1000
+let min_area = 1000
+let max_area = 16000
 
 let game_mode = ref Classic
-let area = ref 50
+let area = ref ((max_area + min_area) / 2)
 let color_mode = ref RBColor
 
 let game_mode_buttons, show_game_mode_buttons =

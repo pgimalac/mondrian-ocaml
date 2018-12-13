@@ -41,15 +41,14 @@ module Bsp_classic : Bsp_type = struct
 
   let generate_random_bsp bound_x bound_y min_area =
     let min_area = float_of_int min_area in
-    let area_range = min_area /. 5. in
     let nb = ref 0 in
     let rec gen_while max min =
       let i = (Random.float (max -. min)) +. min in
-      if max -. i < area_range || i -. min < area_range
+      if max -. i < 10. || i -. min < 10.
       then gen_while max min
       else i
     and gen_rand max min =
-      if max -. min < min_area
+      if (max -. min) *. (max -. min) < min_area
       then raise ToSmallArea
       else gen_while max min
     and generate_random_bsp_depth pt1 pt2 depth =
