@@ -17,7 +17,7 @@ module type Bsp_type = sig
   val change_color : ?reverse:bool -> bsp -> Geometry.point -> bsp
 
   (** Generate a complete random bsp *)
-  val generate_random_bsp : float -> float -> bsp * int
+  val generate_random_bsp : float -> float -> int -> bsp * int
 
   (** Constructor for a leaf of the bsp *)
   val region : Geometry.region_label -> bsp
@@ -125,4 +125,3 @@ val next_color : bool -> Graphics.color -> Graphics.color
 
 (** return a random color among non-white colors *)
 val rand_color : unit -> Graphics.color
-

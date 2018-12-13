@@ -3,7 +3,6 @@ open Geometry
 open Bsp
 
 module Bsp_extrem : Bsp_type = struct
-  let min_area = 10000.
 
   type bsp = R of region_label | L of line_label * bsp * bsp
 
@@ -44,7 +43,7 @@ module Bsp_extrem : Bsp_type = struct
 
   let rec nb = ref 0
 
-  and add_random_line localBsp pts localDepth =
+  and add_random_line localBsp pts localDepth min_area =
     if localDepth = 0
     then localBsp
     else
@@ -52,8 +51,8 @@ module Bsp_extrem : Bsp_type = struct
       | L (l, left, right) ->
          let leftPts, rightPts = split_by_line l.section pts
          in if Random.float 1. < 0.5
-            then L(l, add_random_line left leftPts (localDepth - 1), right)
-            else L(l, left, add_random_line right rightPts (localDepth - 1))
+            then L(l, add_random_line left leftPts (localDepth - 1) min_area, right)
+            else L(l, left, add_random_line right rightPts (localDepth - 1) min_area)
       | R c ->
          let pts = List.sort (compare_counter_clockwise (center pts)) pts in
          let ptsArr = Array.of_list pts in
@@ -73,19 +72,19 @@ module Bsp_extrem : Bsp_type = struct
            end
          else localBsp
 
-  and gen_random_bsp width height nb_lines maxDepth =
+  and gen_random_bsp width height nb_lines maxDepth min_area =
     if maxDepth >= 0 && (2. ** (float_of_int maxDepth)) >= (float_of_int nb_lines /. 2.)
     then R {id = 0; color = rand_color ()}
     else
       let bsp = ref (R {id = 0; color = white}) in
       let v, _ = edges width height in
       for _ = 1 to nb_lines do
-        bsp := add_random_line !bsp v maxDepth
+        bsp := add_random_line !bsp v maxDepth min_area
       done;
       !bsp
 
-  and generate_random_bsp width height =
-    let bsp = gen_random_bsp width height 100 (-1) in
+  and generate_random_bsp width height min_area =
+    let bsp = gen_random_bsp width height 100 (-1) (float_of_int min_area) in
     bsp, !nb
 end
 

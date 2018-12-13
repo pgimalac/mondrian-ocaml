@@ -13,7 +13,7 @@ module type Bsp_type = sig
 
   val change_color : ?reverse:bool -> bsp -> point -> bsp
 
-  val generate_random_bsp : float -> float -> bsp * int
+  val generate_random_bsp : float -> float -> int -> bsp * int
 
   val region : region_label -> bsp
 

@@ -11,23 +11,27 @@ let open_window
                   (string_of_int height));
 
   set_window_title title;
-  synchronize ();
+  auto_synchronize false;
 
   let page = ref Menu.menu in
   Menu.show_on_open ();
+  synchronize ();
 
-  let rec loop () =
+  let rec loop e =
+    !page.plot e;
+    synchronize ();
     let e = wait_next_event [Mouse_motion; Button_down] in
     let _ =
       match !page.handler e with
       | Some p -> page := p;
       | None -> ()
     in
-    loop ()
+    loop e
   in
 
   try
-    loop ();
+    let e = wait_next_event [Mouse_motion; Button_down] in
+    loop e;
   with Exit -> ();
   close_graph ()
 

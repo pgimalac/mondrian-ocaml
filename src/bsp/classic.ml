@@ -38,10 +38,10 @@ module Bsp_classic : Bsp_type = struct
     change_color_depth bsp pt 0
 
   exception ToSmallArea
-  let min_area = 50.
-  let area_range = min_area /. 5.
 
-  let generate_random_bsp bound_x bound_y =
+  let generate_random_bsp bound_x bound_y min_area =
+    let min_area = float_of_int min_area in
+    let area_range = min_area /. 5. in
     let nb = ref 0 in
     let rec gen_while max min =
       let i = (Random.float (max -. min)) +. min in

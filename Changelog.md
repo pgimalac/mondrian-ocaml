@@ -20,3 +20,9 @@ Changelog
 * Implements handlers for _Help_ and _Exists solution_ buttons
 * Generate fnc representing the game status and solve with the sat solver
 * Fix line coloration
+
+### PR #17 User interface improvements
+
+* Seperate view code in differents folders and files for more readability
+* Fix issue #16, Detect when the player win the game and show a new screen
+* Fix issue #15, Add more options on the main page
