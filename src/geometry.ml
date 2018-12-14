@@ -15,13 +15,13 @@ let change_label label line =
     color = label.color;
     section = line
   }
-                
+
 type region_label = {
     id : int;
     color : color;
   }
 
-          
+
 let draw_line color width l =
   Graphics.set_line_width width;
   Graphics.set_color color;
@@ -125,7 +125,8 @@ let compare_counter_clockwise center x y =
 let polygon_area v =
   match v with
   | [] | _ :: [] | _ :: _ :: [] -> 0.
-  | h :: q ->
+  | _ ->
+    let h = List.hd v in
     let rec aux l =
       match l with
       | a :: b :: q -> a.x *. b.y -. a.y *. b.x +. aux (b :: q)
@@ -181,16 +182,16 @@ let separate_lines l  =
           else pt2, pt1
         in
         let leftlabel, rightlabel =
-          change_label label {pt1 = ptL; pt2 = inter}, 
+          change_label label {pt1 = ptL; pt2 = inter},
           change_label label {pt1 = ptR; pt2 = inter} in
         leftlabel :: left, rightlabel :: right)
 
-  
-let rec print_point pt =
+
+let print_point pt =
   print_string ("("^(string_of_float pt.x)^","^(string_of_float pt.y)^")");
   flush stdout
 
-let rec print_line line =
+let print_line line =
   print_point line.pt1;
   print_string (" - ");
   print_point line.pt2;

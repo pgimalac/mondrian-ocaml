@@ -1,5 +1,12 @@
-let antilogy = [[(true, (-1, Graphics.black))]; [(false, (-1, Graphics.black))]]
+let three_colors = ref false
+
+let get_three_colors () = !three_colors
+
+let set_three_colors b =
+  three_colors := b
+
 let tautology = []
+let antilogy = [[(true, (-1, Graphics.black))]; [(false, (-1, Graphics.black))]]
 
 (* all subsets of l of size k *)
 let subsets f k l =
@@ -19,7 +26,7 @@ let subsets f k l =
   List.iter (fun (n, l) -> if n = k then e := l :: !e) l;
   !e
 
-let basics n =
+let basics_three n =
   [
    (* at least one of the three is be true *)
    [(true, (n, Graphics.red)); (true, (n, Graphics.green)); (true, (n, Graphics.blue))];
@@ -29,15 +36,34 @@ let basics n =
    [(false, (n, Graphics.green)); (false, (n, Graphics.blue))]
   ]
 
+let basics_two n =
+  [
+   (* at least one of the two is be true *)
+   [(true, (n, Graphics.red)); (true, (n, Graphics.green))];
+   (* at most one of the two is true *)
+   [(false, (n, Graphics.red)); (false, (n, Graphics.green))];
+  ]
+
+let basics () =
+  if !three_colors
+  then basics_three
+  else basics_two
+
 (* at least k variables in l are c *)
 let at_least (c:Graphics.color) k l =
-  let f = (fun (i:int) -> (true, (i, c))) in
-  subsets f (List.length l + 1 - k) l
+  if k <= 0
+  then tautology
+  else
+    let f = (fun (i:int) -> (true, (i, c))) in
+    subsets f (List.length l + 1 - k) l
 
 (* at most k variables in l are c *)
 let at_most (c:Graphics.color) k l =
-  let f = (fun (i:int) -> (false, (i, c))) in
-  subsets f (k + 1) l
+  if k < 0
+  then antilogy
+  else
+    let f = (fun (i:int) -> (false, (i, c))) in
+    subsets f (k + 1) l
 
 (* red/green/blue means the color is strictly more than half of areas *)
 let one_colored c1 s n1 l =
@@ -62,8 +88,8 @@ let two_colored c1 c2 c3 s n1 n2 n3 l =
   if max < n1 || max < n2 || min - 1 < n3
   then antilogy
   else
-    let x1min = if min <= n1 then tautology else at_least c1 (min - n1) l in
-    let x2min = if min <= n2 then tautology else at_least c2 (min - n2) l in
+    let x1min = at_least c1 (min - n1) l in
+    let x2min = at_least c2 (min - n2) l in
     let x1max = at_most c1 (max - n1) l in
     let x2max = at_most c2 (max - n2) l in
     let x3max = at_most c3 (min - 1 - n3) l in
@@ -74,6 +100,12 @@ let two_colored c1 c2 c3 s n1 n2 n3 l =
 
 let get_yellow s r g b =
   two_colored Graphics.red Graphics.green Graphics.blue s r g b
+
+let get_yellow_two s r g b l =
+  let min = (s + 1) / 2 in
+  let x1min = at_least Graphics.red (min - r) l in
+  let x2min = at_least Graphics.green (min - g) l in
+  List.rev_append x1min x2min
 
 let get_magenta s r g b =
   two_colored Graphics.red Graphics.blue Graphics.green s r b g
@@ -87,9 +119,9 @@ let get_white s r g b l =
   if max < r || max < g || max < b
   then antilogy
   else
-    let rmin = if min <= r then tautology else at_least Graphics.red (min - r) l in
-    let gmin = if min <= g then tautology else at_least Graphics.green (min - g) l in
-    let bmin = if min <= b then tautology else at_least Graphics.blue (min - b) l in
+    let rmin = at_least Graphics.red (min - r) l in
+    let gmin = at_least Graphics.green (min - g) l in
+    let bmin = at_least Graphics.blue (min - b) l in
     List.rev_append gmin bmin
     |> List.rev_append rmin
 
@@ -101,7 +133,11 @@ let get_function_color color =
   else if color = Graphics.red then get_red
   else if color = Graphics.green then get_green
   else if color = Graphics.blue then get_blue
-  else if color = Graphics.yellow then get_yellow
   else if color = Graphics.magenta then get_magenta
   else if color = Graphics.cyan then get_cyan
+  else if color = Graphics.yellow then begin
+    if get_three_colors ()
+    then get_yellow
+    else get_yellow_two
+  end
   else failwith "get_function_color : unknown color"

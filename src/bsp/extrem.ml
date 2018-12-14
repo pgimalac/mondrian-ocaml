@@ -7,7 +7,7 @@ module Bsp_extrem : Bsp_type = struct
 
   type bsp = R of region_label | L of line_label * bsp * bsp
 
-  let fold bx by f g bsp =
+  let fold _ _ f g bsp =
     let rec aux bsp =
       match bsp with
       | L (l, left, right) -> f l (aux left) (aux right)
@@ -15,7 +15,7 @@ module Bsp_extrem : Bsp_type = struct
     in
     aux bsp
 
-  let iter bx by f g acc0 bsp =
+  let iter _ _ f g acc0 bsp =
     let rec aux bsp acc =
       match bsp with
       | L (label, left, right) ->
@@ -54,7 +54,7 @@ module Bsp_extrem : Bsp_type = struct
          in if Random.float 1. < 0.5
             then L(l, add_random_line left leftPts (localDepth - 1), right)
             else L(l, left, add_random_line right rightPts (localDepth - 1))
-      | R c ->
+      | R _ ->
          let pts = List.sort (compare_counter_clockwise (center pts)) pts in
          let ptsArr = Array.of_list pts in
          let new_line = gen_random_lines ptsArr in

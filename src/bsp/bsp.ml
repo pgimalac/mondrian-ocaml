@@ -138,7 +138,7 @@ module Make (B : Bsp_type) = struct
 
   let colors bound_x bound_y bsp =
     let size = ref 0 in
-    iter_area (fun region _ -> size := !size + 1) bsp bound_x bound_y;
+    iter_area (fun _ _ -> size := !size + 1) bsp bound_x bound_y;
     let colors = Array.make !size white in
     iter_area (fun region _ -> colors.(region.id) <- region.color) bsp bound_x bound_y;
     colors
@@ -206,6 +206,7 @@ module Make (B : Bsp_type) = struct
       let f = Logic.get_function_color line.color in
       f size r g b l
     in
+    let basic = Logic.basics () in
     let fnc = ref [] in
     iter bound_x bound_y
       (fun line _ ->
@@ -213,7 +214,7 @@ module Make (B : Bsp_type) = struct
         (0,0)
       ) (fun r _ ->
         if r.color = white
-        then fnc := List.rev_append (Logic.basics r.id) !fnc
+        then fnc := List.rev_append (basic r.id) !fnc
       ) 0 bsp;
     print_endline "done"; flush stdout;
     !fnc
@@ -241,7 +242,7 @@ module Make (B : Bsp_type) = struct
   let is_solution bound_x bound_y adjacency bsp =
     let is_full bsp =
       fold bound_x bound_y
-        (fun line l r -> l && r)
+        (fun _ l r -> l && r)
         (fun region -> region.color != white)
         bsp
     in
@@ -276,12 +277,20 @@ module Make (B : Bsp_type) = struct
       !opt
 end
 
-let _ = Random.self_init ()
-
 let colors = [white; red; green; blue]
-let nb_color = (List.length colors) - 1
+let nb_colors = List.length colors - 1
+
+let rec head l =
+  match l with
+  | a :: b :: q -> a :: (b :: q |> head)
+  | _ -> []
 
 let index color =
+  let colors =
+    if Logic.get_three_colors ()
+    then colors
+    else head colors
+  in
   let rec iter acc l = match l with
     | h :: q ->
       if h = color
@@ -291,19 +300,38 @@ let index color =
   in iter 0 colors
 
 let next_color reverse c =
+  let colors =
+    if Logic.get_three_colors ()
+    then colors
+    else head colors
+  in
+  let nb_colors =
+    if Logic.get_three_colors ()
+    then nb_colors
+    else nb_colors - 1
+  in
   let rec aux tab =
     match tab with
-    | hd1 :: hd2 :: tl when hd1 = c -> hd2
+    | hd1 :: hd2 :: _ when hd1 = c -> hd2
     | hd :: [] when hd = c -> List.hd colors
-    | hd :: tl -> aux tl
+    | _ :: tl -> aux tl
     | [] -> aux colors
   in
   let rec aux_r tab =
     match tab with
-    | hd1 :: hd2 :: tl when hd2 = c -> hd1
-    | hd :: tl -> aux_r tl
-    | [] -> List.nth colors nb_color
+    | hd1 :: hd2 :: _ when hd2 = c -> hd1
+    | _ :: tl -> aux_r tl
+    | [] -> List.nth colors nb_colors
   in (if reverse then aux_r else aux) colors
 
 let rand_color () =
-  List.nth colors ((Random.int nb_color) + 1)
+  let nb_colors =
+    if Logic.get_three_colors ()
+    then nb_colors
+    else nb_colors - 1
+  in List.nth colors ((Random.int nb_colors) + 1)
+
+let _ =
+  Random.self_init ();
+  Logic.set_three_colors false
+

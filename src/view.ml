@@ -16,7 +16,7 @@ let board_width = float_of_int board_width_i
 let board_height = float_of_int board_height_i
 
 (* the probability of a black line is 1 / black_probability *)
-let black_probability = 25
+let black_probability = ref 25
 
 exception Exit
 
@@ -98,15 +98,15 @@ type game_mode = Classic | Extrem
 
 let menu st =
   let title = "Mondrian" in
-  let w, h = text_size title in
+  let w, _ = text_size title in
   let x_title = (window_width - w) / 2 in
   let y_title = 450 in
 
   let buttons =
     [
-      create_button "Classic mode" 150. 325. 250 75, (fun st -> Some Classic);
-      create_button "Extrem mode" 150. 200. 250 75, (fun st -> Some Extrem);
-      create_button "Quit" 150. 75. 250 75, fun st -> raise Exit
+      create_button "Classic mode" 150. 325. 250 75, (fun _ -> Some Classic);
+      create_button "Extrem mode" 150. 200. 250 75, (fun _ -> Some Extrem);
+      create_button "Quit" 150. 75. 250 75, fun _ -> raise Exit
     ] in
 
   let print_menu hovers =
@@ -119,7 +119,7 @@ let menu st =
   | Some st when st.button ->
      begin
        match List.find_opt (fun (btn, _) -> is_click btn st) buttons with
-       | Some (btn, hdl) -> hdl st
+       | Some (_, hdl) -> hdl st
        | None ->
           print_menu (List.map (fun (btn, _) -> is_click btn st) buttons);
           None
@@ -166,13 +166,13 @@ module Make (B : Bsp_complete) : Bsp_view = struct
     let sol_btn i = create_button "Exists solution ?" (x_pos i) y w h ~bkg:blue in
 
     let no_history_msg = "No history" in
-    let w_no_hist, h_no_hist = text_size no_history_msg in
+    let w_no_hist, _ = text_size no_history_msg in
 
     let no_solution_msg = "No solution" in
-    let w_no_sol, h_no_sol = text_size no_solution_msg in
+    let w_no_sol, _ = text_size no_solution_msg in
 
     let has_solution_msg = "There is a solution" in
-    let w_has_sol, h_has_sol = text_size has_solution_msg in
+    let w_has_sol, _ = text_size has_solution_msg in
 
     let help_hdl () =
       let x = B.get_clue board_width board_height !adjacency !bsp in
@@ -213,7 +213,7 @@ module Make (B : Bsp_complete) : Bsp_view = struct
          moveto ((window_width - w_no_hist) / 2) (board_height_i + gap);
          draw_string no_history_msg
       | (pt, n) :: tl ->
-        for i = 1 to n do
+        for _ = 1 to n do
           bsp := B.change_color ~reverse:true !bsp pt
         done;
         history := tl;
@@ -265,7 +265,7 @@ module Make (B : Bsp_complete) : Bsp_view = struct
               !adjacency.(line.id)
           in
           let label =
-            if (Random.int black_probability = 0)
+            if (Random.int !black_probability = 0)
             then {line with color = black}
             else
               if 2 * r > size
@@ -302,8 +302,8 @@ module Make (B : Bsp_complete) : Bsp_view = struct
             end
           else if e.button
           then begin
-              match List.find_opt (fun (btn, h) -> is_click btn e) interface_button with
-              | Some (btn, h) -> h ()
+              match List.find_opt (fun (btn, _) -> is_click btn e) interface_button with
+              | Some (_, h) -> h ()
               | _ -> ()
             end;
           plot ()

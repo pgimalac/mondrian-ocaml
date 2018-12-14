@@ -36,6 +36,7 @@ module type Bsp_type = sig
              (Geometry.line_label -> 'a -> 'a -> 'a) ->
              (Geometry.region_label -> 'a) ->
              bsp -> 'a
+
   (** apply a side effect on a region
       based on accumulators generated with adjacents lines *)
   val iter : float -> float ->
@@ -125,4 +126,3 @@ val next_color : bool -> Graphics.color -> Graphics.color
 
 (** return a random color among non-white colors *)
 val rand_color : unit -> Graphics.color
-
