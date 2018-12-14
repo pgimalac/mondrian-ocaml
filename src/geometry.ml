@@ -4,21 +4,21 @@ type point = { x : float; y : float; }
 type line = { pt1 : point; pt2 : point; }
 
 type line_label = {
-    id      : int;
+    line_id      : int;
+    line_color   : color;
     section : line;
-    color   : color;
   }
 
 let change_label label line =
   {
-    id = label.id;
-    color = label.color;
+    line_id = label.line_id;
+    line_color = label.line_color;
     section = line
   }
 
 type region_label = {
-    id : int;
-    color : color;
+    region_id : int;
+    region_color : color;
   }
 
 

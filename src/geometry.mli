@@ -2,17 +2,17 @@ type point = { x : float; y : float; }
 type line = { pt1 : point; pt2 : point; }
 
 type line_label = {
-    id      : int;
+    line_id      : int;
+    line_color   : Graphics.color;
     section : line;
-    color   : Graphics.color;
   }
 
 type region_label = {
-    id : int;
-    color : Graphics.color;
+    region_id : int;
+    region_color : Graphics.color;
   }
 
-          
+
 val draw_line : Graphics.color -> int -> line -> unit
 val coefs : line -> (float * float) option
 val is_left : point -> line -> bool

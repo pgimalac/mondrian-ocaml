@@ -40,7 +40,7 @@ module Bsp_extrem : Bsp_type = struct
          else left, change_color ~reverse:reverse right pt
        in
        L (l, left, right)
-    | R region -> R {id=region.id;color=(next_color reverse region.color)}
+    | R region -> R {region_id=region.region_id;region_color=(next_color reverse region.region_color)}
 
   let rec nb = ref 0
 
@@ -67,17 +67,17 @@ module Bsp_extrem : Bsp_type = struct
          if polygon_area left > min_area && polygon_area right > min_area
          then begin
              nb := !nb + 1;
-             L({color = 0; id = 0; section = new_line},
-                R {color = rand_color (); id = 0},
-                R {color = rand_color (); id = 0})
+             L({line_color = 0; line_id = 0; section = new_line},
+                R {region_color = rand_color (); region_id = 0},
+                R {region_color = rand_color (); region_id = 0})
            end
          else localBsp
 
   and gen_random_bsp width height nb_lines maxDepth =
     if maxDepth >= 0 && (2. ** (float_of_int maxDepth)) >= (float_of_int nb_lines /. 2.)
-    then R {id = 0; color = rand_color ()}
+    then R {region_id = 0; region_color = rand_color ()}
     else
-      let bsp = ref (R {id = 0; color = white}) in
+      let bsp = ref (R {region_id = 0; region_color = white}) in
       let v, _ = edges width height in
       for _ = 1 to nb_lines do
         bsp := add_random_line !bsp v maxDepth

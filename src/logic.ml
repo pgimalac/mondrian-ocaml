@@ -101,7 +101,7 @@ let two_colored c1 c2 c3 s n1 n2 n3 l =
 let get_yellow s r g b =
   two_colored Graphics.red Graphics.green Graphics.blue s r g b
 
-let get_yellow_two s r g b l =
+let get_yellow_two s r g _ l =
   let min = (s + 1) / 2 in
   let x1min = at_least Graphics.red (min - r) l in
   let x2min = at_least Graphics.green (min - g) l in

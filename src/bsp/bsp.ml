@@ -109,7 +109,7 @@ module Make (B : Bsp_type) = struct
   let clean bound_x bound_y bsp =
     fold bound_x bound_y
       node
-      (fun r -> region {r with color = white})
+      (fun r -> region {r with region_color = white})
       bsp
 
   let get_lines_area bound_x bound_y bsp number_lines =
@@ -119,7 +119,7 @@ module Make (B : Bsp_type) = struct
         separate_lines label.section ([label], [label]) lines)
       (fun region lines ->
         List.iter
-          (fun (l: line_label) -> arr.(l.id) <- region.id :: arr.(l.id))
+          (fun l -> arr.(l.line_id) <- region.region_id :: arr.(l.line_id))
           lines)
       [] bsp;
     arr
@@ -130,25 +130,25 @@ module Make (B : Bsp_type) = struct
     fold bound_x bound_y
       (fun l left right ->
         j := !j + 1;
-        node {l with id = !j} left right)
+        node {l with line_id = !j} left right)
       (fun r ->
         i := !i + 1;
-        region {r with id = !i})
+        region {r with region_id = !i})
       bsp
 
   let colors bound_x bound_y bsp =
     let size = ref 0 in
     iter_area (fun _ _ -> size := !size + 1) bsp bound_x bound_y;
     let colors = Array.make !size white in
-    iter_area (fun region _ -> colors.(region.id) <- region.color) bsp bound_x bound_y;
+    iter_area (fun region _ -> colors.(region.region_id) <- region.region_color) bsp bound_x bound_y;
     colors
 
   let color_nth bound_x bound_y bsp id color =
     fold bound_x bound_y
       node
       (fun r ->
-        if r.id = id
-        then region {r with color = color}
+        if r.region_id = id
+        then region {r with region_color = color}
         else region r)
     bsp
 
@@ -166,7 +166,7 @@ module Make (B : Bsp_type) = struct
     )
 
   let print_adjacency (line:line_label) colors adjacency = (* for debug purpose *)
-    print_color line.color;
+    print_color line.line_color;
     print_string " : ";
     List.iter (fun i ->
       print_string "(";
@@ -174,7 +174,7 @@ module Make (B : Bsp_type) = struct
       print_string ", ";
       print_color colors.(i);
       print_string ") ";
-    ) adjacency.(line.id);
+    ) adjacency.(line.line_id);
     print_newline ()
 
   let print_fnc f = (* for debug purpose *)
@@ -202,8 +202,8 @@ module Make (B : Bsp_type) = struct
             g + (if color = green then 1 else 0),
             b + (if color = blue then 1 else 0),
             if color = white then id :: l else l)
-          (0, 0, 0, 0, []) adjacency.(line.id) in
-      let f = Logic.get_function_color line.color in
+          (0, 0, 0, 0, []) adjacency.(line.line_id) in
+      let f = Logic.get_function_color line.line_color in
       f size r g b l
     in
     let basic = Logic.basics () in
@@ -213,8 +213,8 @@ module Make (B : Bsp_type) = struct
         fnc := List.rev_append (get_fnc_line line) !fnc;
         (0,0)
       ) (fun r _ ->
-        if r.color = white
-        then fnc := List.rev_append (basic r.id) !fnc
+        if r.region_color = white
+        then fnc := List.rev_append (basic r.region_id) !fnc
       ) 0 bsp;
     print_endline "done"; flush stdout;
     !fnc
@@ -243,7 +243,7 @@ module Make (B : Bsp_type) = struct
     let is_full bsp =
       fold bound_x bound_y
         (fun _ l r -> l && r)
-        (fun region -> region.color != white)
+        (fun region -> region.region_color != white)
         bsp
     in
     if is_full bsp
@@ -257,21 +257,17 @@ module Make (B : Bsp_type) = struct
               (fun (r, b) id ->
                 let c = region_colors.(id) in
                 (if c = red then 1 else 0) + r, (if c = blue then 1 else 0) + b)
-              (0, 0) adjacency.(line.id) in
-          if line.color = red then r > b
-          else if line.color = blue then r < b
+              (0, 0) adjacency.(line.line_id) in
+          if line.line_color = red then r > b
+          else if line.line_color = blue then r < b
           else r = b)
         bsp
-(*
-  val iter_area : (region_label -> point list -> unit) ->
-                  bsp -> float -> float -> unit
-*)
 
   let find_center bsp bound_x bound_y n =
     let opt = ref None in
     iter_area
       (fun label pts ->
-        if label.id = n
+        if label.region_id = n
         then opt := Some (center pts)
       ) bsp bound_x bound_y;
       !opt
@@ -333,5 +329,5 @@ let rand_color () =
 
 let _ =
   Random.self_init ();
-  Logic.set_three_colors false
+  Logic.set_three_colors true
 

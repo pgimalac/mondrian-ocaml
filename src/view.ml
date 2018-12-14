@@ -228,7 +228,7 @@ module Make (B : Bsp_complete) : Bsp_view = struct
   let plot_bsp bsp =
     B.iter_area
       (fun label pts ->
-        set_color label.color;
+        set_color label.region_color;
         let poly =
           Array.map
             (fun pt -> int_of_float pt.x, int_of_float pt.y) (Array.of_list pts)
@@ -237,7 +237,7 @@ module Make (B : Bsp_complete) : Bsp_view = struct
       bsp board_width board_height;
     B.iter_line
       (fun l -> draw_line black wrap_line_width l.section;
-             draw_line l.color colored_line_width l.section)
+             draw_line l.line_color colored_line_width l.section)
       bsp board_width board_height;
     let _, e = edges board_width board_height in
     List.iter (fun x -> draw_line black wrap_line_width x; draw_line black colored_line_width x) e
@@ -262,23 +262,23 @@ module Make (B : Bsp_complete) : Bsp_view = struct
                 then s + 1, r, g + 1, b
                 else s + 1, r, g, b + 1)
               (0, 0, 0, 0)
-              !adjacency.(line.id)
+              !adjacency.(line.line_id)
           in
           let label =
             if (Random.int !black_probability = 0)
-            then {line with color = black}
+            then {line with line_color = black}
             else
               if 2 * r > size
-              then {line with color = red}
+              then {line with line_color = red}
               else if 2 * b > size
-              then {line with color = blue}
+              then {line with line_color = blue}
               else if 2 * g > size
-              then {line with color = green}
+              then {line with line_color = green}
               else
                 let c = (if 4 * r >= size then red else 0) +
                         (if 4 * g >= size then green else 0) +
                         (if 4 * b >= size then blue else 0)
-                in {line with color = c}
+                in {line with line_color = c}
           in
           B.node label left right)
         B.region
