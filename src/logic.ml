@@ -135,8 +135,8 @@ module Make (S : Game_settings) = struct
     else if color = Graphics.cyan then get_cyan
     else if color = Graphics.yellow then begin
         match S.color with
-        | RBColor -> get_yellow
-        | RGBColor -> get_yellow_two
+        | RBColor -> get_yellow_two
+        | RGBColor -> get_yellow
       end
     else failwith "get_function_color : unknown color"
 end
