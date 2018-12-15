@@ -4,7 +4,7 @@ open Bsp
 open Interface
 
 let gap = 5
-let white_line_width = 5
+let wrap_line_width = 5
 let colored_line_width = 3
 
 let show_win_page st =
@@ -19,15 +19,6 @@ let win_page () =
     handler = fun st -> if st.button || st.keypressed then raise Exit; None
   }
 
-type game_mode = Classic | Extrem
-type color_mode = RBColor | RGBColor
-
-module type Game_settings = sig
-  val mode : game_mode
-  val color : color_mode
-  val min_area : int
-end
-
 module type Bsp_view = sig
 
   val plot : status -> unit
@@ -36,7 +27,10 @@ module type Bsp_view = sig
 
 end
 
-module Make (S : Game_settings) (B : Bsp_complete) : Bsp_view = struct
+module Make
+         (S : Settings.Game_settings)
+         (C : Settings.Colors)
+         (B : Bsp_complete) : Bsp_view = struct
 
   let bsp, nb_lines =
     let b, nb = B.generate_random_bsp board_width board_height S.min_area in
@@ -48,7 +42,7 @@ module Make (S : Game_settings) (B : Bsp_complete) : Bsp_view = struct
   let plot_bsp bsp =
     B.iter_area
       (fun label pts ->
-        set_color label.color;
+        set_color label.region_color;
         let poly =
           Array.map
             (fun pt -> int_of_float pt.x, int_of_float pt.y)
@@ -57,37 +51,28 @@ module Make (S : Game_settings) (B : Bsp_complete) : Bsp_view = struct
         fill_poly poly)
       bsp board_width board_height;
     B.iter_line
-      (fun l -> draw_line white white_line_width l.section;
-             draw_line l.color colored_line_width l.section)
+      (fun l -> draw_line black wrap_line_width l.section;
+             draw_line l.line_color colored_line_width l.section)
       bsp board_width board_height;
     let _, e = edges board_width board_height in
     List.iter
       (fun x ->
-        draw_line white white_line_width x;
+        draw_line black wrap_line_width x;
         draw_line black colored_line_width x) e
 
   let count (line: line_label) colors =
     List.fold_left
-      (fun (r, b) id ->
+      (fun (s, r, b, g) id ->
         if colors.(id) = red
-        then r + 1, b
+        then s + 1, r + 1, b, g
         else if colors.(id) = blue
-        then r, b + 1
-        else r, b)
-      (0, 0)
-      !adjacency.(line.id)
+        then s + 1, r, b + 1, g
+        else s + 1, r, b, g + 1)
+      (0, 0, 0, 0)
+      !adjacency.(line.line_id)
 
   let is_win () =
-    let colors = B.colors board_width board_height !bsp in
-    B.fold board_width board_height
-      (fun line left right ->
-        let r, b = count line colors in
-        left && right &&
-          ((r > b && line.color = red) ||
-             (r < b && line.color = blue) ||
-               (r = b && line.color = green)))
-      (fun _ -> true)
-      !bsp
+    B.is_solution board_width board_height !adjacency !bsp
 
   let w = 100
   let h = 50
@@ -115,9 +100,9 @@ module Make (S : Game_settings) (B : Bsp_complete) : Bsp_view = struct
   let help_hdl () =
     let x = B.get_clue board_width board_height !adjacency !bsp in
     let _ = match x with
-      | None -> ()
+      | None -> text := no_solution_msg;
       | Some (n, c) -> begin
-          match Bsp.index c, B.find_center !bsp board_width board_height n with
+          match C.index c, B.find_center !bsp board_width board_height n with
           | _, None -> failwith "Help : incorrect zone number"
           | None, _ -> failwith "Help : incorrect color"
           | Some i, _ when i < 1 -> failwith "Help : incorrect color"
@@ -177,14 +162,22 @@ module Make (S : Game_settings) (B : Bsp_complete) : Bsp_view = struct
     bsp := B.init board_width board_height !bsp;
     adjacency := B.get_lines_area board_width board_height !bsp nb_lines;
     let colors = B.colors board_width board_height !bsp in
-    let change_line_color (line: line_label) left right =
-      let r, b = count line colors in
-      let label : line_label =
-        if r > b
-        then {line with color = red}
-        else if r < b
-        then {line with color = blue}
-        else {line with color = green}
+    let change_line_color line left right =
+      let size, r, b, g = count line colors in
+      let label =
+        if Random.int 100 <= S.black_probability
+        then {line with line_color = black}
+        else if 2 * r > size
+        then {line with line_color = red}
+        else if 2 * b > size
+        then {line with line_color = blue}
+        else if 2 * g > size
+        then {line with line_color = green}
+        else
+          let c = (if 4 * r >= size then red else 0) +
+                    (if 4 * g >= size then green else 0) +
+                    (if 4 * b >= size then blue else 0)
+          in {line with line_color = c}
       in
       B.node label left right
     in
@@ -223,16 +216,18 @@ module Make (S : Game_settings) (B : Bsp_complete) : Bsp_view = struct
 
 end
 
-let make_game_view (module S : Game_settings) =
+let make_game_view (module S : Settings.Game_settings) =
   match S.mode with
   | Classic ->
-     let module M = Make(S)(Classic.Bsp) in
+     let module C = Settings.Make_Colors(S) in
+     let module M = Make(S)(C)(Classic.Bsp(S)(C)) in
      {
        plot = M.plot;
        handler = M.view ()
      }
   | Extrem ->
-     let module M = Make(S)(Extrem.Bsp) in
+     let module C = Settings.Make_Colors(S) in
+     let module M = Make(S)(C)(Extrem.Bsp(S)(C)) in
      {
        plot = M.plot;
        handler = M.view ()

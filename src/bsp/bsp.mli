@@ -36,6 +36,7 @@ module type Bsp_type = sig
              (Geometry.line_label -> 'a -> 'a -> 'a) ->
              (Geometry.region_label -> 'a) ->
              bsp -> 'a
+
   (** apply a side effect on a region
       based on accumulators generated with adjacents lines *)
   val iter : float -> float ->
@@ -66,6 +67,8 @@ module type Bsp_complete = sig
 
   val get_lines_area : float -> float -> bsp -> int -> int list array
 
+  val for_all_lines : float -> float -> (Geometry.line_label -> bool) -> bsp -> bool
+
   (** set unique id for each region and line *)
   val init : float -> float -> bsp -> bsp
 
@@ -85,13 +88,13 @@ module type Bsp_complete = sig
       TODO: add some details here  *)
   val get_fnc : float -> float ->
                 int list array -> bsp ->
-                (bool * int) list list
+                (bool * (int * Graphics.color)) list list
 
   (** for a given bsp return a coloration if it exists
       return None otherwise *)
   val get_solution : float -> float ->
                      int list array -> bsp ->
-                     (bool * int) list option
+                     (bool * (int * Graphics.color)) list option
 
   (** for a given bsp return a region id and a color leading to a solution
       if no solution exists return None *)
@@ -115,13 +118,4 @@ module type Bsp_complete = sig
 end
 
 (** Construct a complete bsp from the minimum implementation *)
-module Make : functor (B : Bsp_type) -> Bsp_complete
-
-(** returns the index of the given color into the list, None if it isn't in *)
-val index : Graphics.color -> int option
-
-(** iter through colors, in reversed order if the given boolean is true *)
-val next_color : bool -> Graphics.color -> Graphics.color
-
-(** return a random color among non-white colors *)
-val rand_color : unit -> Graphics.color
+module Make : functor (S : Settings.Game_settings) (B : Bsp_type) -> Bsp_complete

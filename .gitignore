@@ -1,4 +1,5 @@
 mondrian
+*.annot
 *.cmi
 *.cmo
 *.pdf

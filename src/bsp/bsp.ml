@@ -3,8 +3,10 @@ open Geometry
 open Sat_solver
 
 module SOLVER = Make (struct
-  type t = int
-  let compare a b = a - b
+  type t = int * color
+  let compare (i1, c1) (i2, c2) =
+    if i1 = i2 then c1 - c2
+    else i1 - i2
 end)
 
 module type Bsp_type = sig
@@ -44,6 +46,8 @@ module type Bsp_complete = sig
 
   val get_lines_area : float -> float -> bsp -> int -> int list array
 
+  val for_all_lines : float -> float -> (line_label -> bool) -> bsp -> bool
+
   val init : float -> float -> bsp -> bsp
 
   val colors : float -> float -> bsp -> int array
@@ -54,11 +58,11 @@ module type Bsp_complete = sig
 
   val get_fnc : float -> float ->
                 int list array -> bsp ->
-                (bool * int) list list
+                (bool * (int * color)) list list
 
   val get_solution : float -> float ->
                      int list array -> bsp ->
-                     (bool * int) list option
+                     (bool * (int * color)) list option
 
   val get_clue : float -> float ->
                  int list array -> bsp ->
@@ -76,7 +80,9 @@ module type Bsp_complete = sig
 
 end
 
-module Make (B : Bsp_type) = struct
+module Make (S : Settings.Game_settings) (B : Bsp_type) = struct
+
+  module L = Logic.Make (S)
 
   include B
 
@@ -107,7 +113,7 @@ module Make (B : Bsp_type) = struct
   let clean bound_x bound_y bsp =
     fold bound_x bound_y
       node
-      (fun r -> region {r with color = white})
+      (fun r -> region {r with region_color = white})
       bsp
 
   let get_lines_area bound_x bound_y bsp number_lines =
@@ -117,7 +123,7 @@ module Make (B : Bsp_type) = struct
         separate_lines label.section ([label], [label]) lines)
       (fun region lines ->
         List.iter
-          (fun (l: line_label) -> arr.(l.id) <- region.id :: arr.(l.id))
+          (fun l -> arr.(l.line_id) <- region.region_id :: arr.(l.line_id))
           lines)
       [] bsp;
     arr
@@ -125,169 +131,150 @@ module Make (B : Bsp_type) = struct
   let init bound_x bound_y bsp =
     let i = ref (-1) in
     let j = ref (-1) in
-    let t =
-      fold bound_x bound_y
-        (fun l left right ->
-          j := !j + 1;
-          node {l with id = !j} left right)
-        (fun r ->
-          i := !i + 1;
-          region {r with id = !i})
-        bsp
-    in
-    t
+    fold bound_x bound_y
+      (fun l left right ->
+        j := !j + 1;
+        node {l with line_id = !j} left right)
+      (fun r ->
+        i := !i + 1;
+        region {r with region_id = !i})
+      bsp
 
   let colors bound_x bound_y bsp =
-    let colors =
-      fold bound_x bound_y
-        (fun _ left right -> right @ left)
-        (fun region -> [region.color])
-        bsp
-    in
-    Array.of_list colors
+    let size = ref 0 in
+    iter_area (fun _ _ -> size := !size + 1) bsp bound_x bound_y;
+    let colors = Array.make !size white in
+    iter_area (fun region _ -> colors.(region.region_id) <- region.region_color) bsp bound_x bound_y;
+    colors
 
   let color_nth bound_x bound_y bsp id color =
     fold bound_x bound_y
       node
       (fun r ->
-        if r.id = id
-        then region {r with color = color}
+        if r.region_id = id
+        then region {r with region_color = color}
         else region r)
     bsp
+
+  let print_color color = (* for debug purpose *)
+    print_string (
+      if color = white then "white"
+      else if color = black then "black"
+      else if color = red then "red"
+      else if color = green then "green"
+      else if color = blue then "blue"
+      else if color = yellow then "yellow"
+      else if color = cyan then "cyan"
+      else if color = magenta then "magenta"
+      else "unknown color"
+    )
+
+  let print_adjacency (line:line_label) colors adjacency = (* for debug purpose *)
+    print_color line.line_color;
+    print_string " : ";
+    List.iter (fun i ->
+      print_string "(";
+      print_int i;
+      print_string ", ";
+      print_color colors.(i);
+      print_string ") ";
+    ) adjacency.(line.line_id);
+    print_newline ()
 
   let print_fnc f = (* for debug purpose *)
     List.iter (fun x ->
         print_string "[";
-        List.iter (fun (b, n) ->
+        List.iter (fun (b, (n, c)) ->
+            print_int n;
+            print_string " ";
             if not b
             then print_string "not ";
-            print_int n; print_string " ") x;
+            print_color c; print_string " ou ") x;
         print_string "] et ";
       ) f;
     print_newline ()
 
   let get_fnc bound_x bound_y adjacency bsp =
     let region_colors = colors bound_x bound_y bsp in
-    let get_fnc_line (line: line_label) =
-      let regions = adjacency.(line.id) in
-      let size, r, b, l =
+    let get_fnc_line (line:line_label) =
+      let size, r, g, b, l =
         List.fold_left
-          (fun (s, r, b, l) id ->
+          (fun (s, r, g, b, l) id ->
             let color = region_colors.(id) in
             s + 1,
             r + (if color = red then 1 else 0),
+            g + (if color = green then 1 else 0),
             b + (if color = blue then 1 else 0),
             if color = white then id :: l else l)
-          (0, 0, 0, []) regions in
-      if line.color = green
-      then
-          let nbR = (size / 2 - r) in
-          if size mod 2 = 0 && nbR >= 0
-          then Logic.split true nbR l
-          else Logic.antilogy
-      else
-        let boo = (line.color = red) in
-        let k = size / 2 + 1 - (if boo then r else b) in
-        if k < 0
-        then Logic.tautology
-        else Logic.at_least boo k l
+          (0, 0, 0, 0, []) adjacency.(line.line_id) in
+      let f = L.get_function_color line.line_color in
+      f size r g b l
     in
+    let basic = L.basics in
     fold bound_x bound_y
       (fun line left right ->
         get_fnc_line line
         |> List.rev_append left
         |> List.rev_append right)
       (fun r ->
-        if r.color = white
-        then [[(true, r.id); (false, r.id)]]
+        if r.region_color = white
+        then basic r.region_id
         else [])
       bsp
 
   let get_solution bound_x bound_y adjacency bsp =
-    SOLVER.solve (get_fnc bound_x bound_y adjacency bsp)
+    get_fnc bound_x bound_y adjacency bsp
+    |> SOLVER.solve
 
   let get_clue bound_x bound_y adjacency bsp =
     let sol = get_solution bound_x bound_y adjacency bsp in
     match sol with
     | None -> None
     | Some s ->
-       let size = List.length s in
-       if size > 0 then
-         let n = Random.int size in
-         let (b, i) = List.nth s n in
-         let c = if b then red else blue in
-         Some (i, c)
-       else None
+      let size, sol = List.fold_left (fun (s,l) (b, (i, col)) ->
+        if b then (s + 1, (i, col) :: l) else (s, l)
+      ) (0, []) s in
+      if size > 0 then
+        let n = Random.int size in
+        Some (List.nth sol n)
+      else None
 
   let has_solution bound_x bound_y adjacency bsp =
     (get_solution bound_x bound_y adjacency bsp) <> None
 
   let is_solution bound_x bound_y adjacency bsp =
-    let is_full bsp =
-      fold bound_x bound_y
-        (fun line l r -> l && r)
-        (fun region -> region.color != white)
-        bsp
-    in
-    if is_full bsp
-    then true
-    else
-      let region_colors = colors bound_x bound_y bsp in
-      for_all_lines bound_x bound_y
-        (fun line ->
-          let r, b =
-            List.fold_left
-              (fun (r, b) id ->
-                let c = region_colors.(id) in
-                (if c = red then 1 else 0) + r, (if c = blue then 1 else 0) + b)
-              (0, 0) adjacency.(line.id) in
-          if line.color = red then r > b
-          else if line.color = blue then r < b
-          else r = b)
-        bsp
-(*
-  val iter_area : (region_label -> point list -> unit) ->
-                  bsp -> float -> float -> unit
-*)
+    let region_colors = colors bound_x bound_y bsp in
+    for_all_lines bound_x bound_y
+      (fun line ->
+        let size, r, b, g =
+          List.fold_left
+            (fun (s, r, b, g) id ->
+              if region_colors.(id) = red
+              then s + 1, r + 1, b, g
+              else if region_colors.(id) = blue
+              then s + 1, r, b + 1, g
+              else if region_colors.(id) = green
+              then s + 1, r, b, g + 1
+              else s + 1, r, b, g)
+            (0, 0, 0, 0) adjacency.(line.line_id) in
+        if line.line_color = black then true
+        else if line.line_color = red then 2 * r > size
+        else if line.line_color = blue then 2 * b > size
+        else if line.line_color = green then 2 * g > size
+        else
+          let c = (if 4 * r >= size then red else 0) +
+                    (if 4 * g >= size then green else 0) +
+                    (if 4 * b >= size then blue else 0)
+          in c = line.line_color)
+      bsp
 
   let find_center bsp bound_x bound_y n =
     let opt = ref None in
     iter_area
       (fun label pts ->
-        if label.id = n
+        if label.region_id = n
         then opt := Some (center pts)
       ) bsp bound_x bound_y;
-      !opt
+    !opt
+
 end
-
-let _ = Random.self_init ()
-
-let colors = [white; red; blue]
-let nb_color = (List.length colors) - 1
-
-let index color =
-  let rec iter acc l = match l with
-    | h :: q ->
-      if h = color
-      then Some acc
-      else iter (acc + 1) q
-    | [] -> None
-  in iter 0 colors
-
-let next_color reverse c =
-  let rec aux tab =
-    match tab with
-    | hd1 :: hd2 :: tl when hd1 = c -> hd2
-    | hd :: [] when hd = c -> List.hd colors
-    | hd :: tl -> aux tl
-    | [] -> aux colors
-  in
-  let rec aux_r tab =
-    match tab with
-    | hd1 :: hd2 :: tl when hd2 = c -> hd1
-    | hd :: tl -> aux_r tl
-    | [] -> List.nth colors nb_color
-  in (if reverse then aux_r else aux) colors
-
-let rand_color () =
-  List.nth colors ((Random.int nb_color) + 1)

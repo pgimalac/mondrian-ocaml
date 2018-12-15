@@ -1,26 +1,31 @@
 open Graphics
 open Interface
 open Bsp_view
+open Settings
 
 let min_area = 1000
 let max_area = 16000
 
+let max_black = 50
+let min_black = 0
+
 let game_mode = ref Classic
 let area = ref ((max_area + min_area) / 2)
+let black_probability = ref ((max_black + min_black) / 2)
 let color_mode = ref RBColor
 
 let game_mode_buttons, show_game_mode_buttons =
   buttons_groups
     [
-      create_button "Classic mode" 180. 250. 110 75, (fun () -> game_mode := Classic);
-      create_button "Extrem mode" 310. 250. 110 75, (fun () -> game_mode := Extrem);
+      create_button "Classic mode" 180. 350. 110 75, (fun () -> game_mode := Classic);
+      create_button "Extrem mode" 310. 350. 110 75, (fun () -> game_mode := Extrem);
     ]
 
 let game_color_buttons, show_game_color_buttons =
   buttons_groups
     [
-      create_button "2 Colors" 180. 350. 110 75, (fun () -> color_mode := RBColor);
-      create_button "3 Colors" 310. 350. 110 75, (fun () -> color_mode := RGBColor);
+      create_button "2 Colors" 180. 450. 110 75, (fun () -> color_mode := RBColor);
+      create_button "3 Colors" 310. 450. 110 75, (fun () -> color_mode := RGBColor);
     ]
 
 let buttons =
@@ -58,13 +63,13 @@ let slide_bar title y min max value st_opt =
     | Some st ->
        if st.button && st.mouse_x >= slide_bar_x && st.mouse_x <= slide_bar_xx &&
             st.mouse_y >= y - slide_bar_padding && st.mouse_y <= y + slide_bar_padding
-       then value := (st.mouse_x - slide_bar_x) * (max_area - min_area) /
-                       slide_bar_width + min_area;
+       then value := (st.mouse_x - slide_bar_x) * (max - min) /
+                       slide_bar_width + min;
   in
 
   set_line_width 2;
-  let x = (!value - min_area) * slide_bar_width /
-            (max_area - min_area) + slide_bar_x
+  let x = (!value - min) * slide_bar_width /
+            (max - min) + slide_bar_x
   in
   moveto x (y - 10);
   lineto x (y + 10);
@@ -74,9 +79,9 @@ let slide_bar title y min max value st_opt =
   draw_string title;
 
   moveto slide_bar_x (y - slide_bar_height / 2);
-  draw_string (string_of_int min_area);
+  draw_string (string_of_int min);
   moveto slide_bar_xx (y - slide_bar_height / 2);
-  draw_string (string_of_int max_area);
+  draw_string (string_of_int max);
   moveto (slide_bar_x + slide_bar_width / 2) (y - slide_bar_height / 2);
   draw_string (string_of_int !value)
 
@@ -84,7 +89,7 @@ let show_title () =
   let title = "Mondrian" in
   let w, h = text_size title in
   let x_title = (window_width - w) / 2 in
-  let y_title = 450 in
+  let y_title = 600 in
 
   set_color black;
   moveto x_title y_title;
@@ -103,6 +108,7 @@ let show_buttons st_opt =
 let show_on_open () =
   show_title ();
   slide_bar "Minimum area" 200 min_area max_area area None;
+  slide_bar "Black probability" 275 min_black max_black black_probability None;
   show_game_mode_buttons ();
   show_game_color_buttons ();
   show_buttons None
@@ -110,6 +116,7 @@ let show_on_open () =
 let show_menu st =
   show_title ();
   slide_bar "Minimum area" 200 min_area max_area area (Some st);
+  slide_bar "Black probability" 275 min_black max_black black_probability (Some st);
   show_game_mode_buttons ();
   show_game_color_buttons ();
   show_buttons (Some st)
@@ -120,6 +127,7 @@ let create_page st =
       let mode = !game_mode
       let color = !color_mode
       let min_area = !area
+      let black_probability = !black_probability
     end
   in
   Some (make_game_view (module B))
@@ -138,7 +146,6 @@ let select_mode st =
     | None -> None
     | Some (btn, hdl) when btn.text = "Play" -> create_page st
     | Some (btn, hdl) -> hdl (); None
-
 
 let menu =
   {

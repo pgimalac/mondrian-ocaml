@@ -1,5 +1,5 @@
 NAME = mondrian
-SOURCES = geometry.ml logic.ml sat_solver.ml \
+SOURCES = sat_solver.ml geometry.ml settings.ml logic.ml \
 		  bsp/bsp.ml bsp/extrem.ml bsp/classic.ml \
 		  interface.ml view/bsp_view.ml view/menu.ml main.ml
 
@@ -8,7 +8,7 @@ SOURCES_FP = $(addprefix $(FOLDER), $(SOURCES))
 
 CAMLC = ocamlc
 LIBS = graphics.cma
-FLAGS = -I src/ -I src/bsp -I src/view
+FLAGS = -g -verbose -w +a -I src/ -I src/bsp -I src/view
 
 all: $(NAME)
 

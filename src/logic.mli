@@ -1,8 +1,13 @@
-val antilogy : (bool * int) list list
-val tautology : (bool * int) list list
+module Make :
+functor (S : Settings.Game_settings) -> sig
 
-val split : bool -> int -> int list -> (bool * int) list list
+  val antilogy : (bool * (int * Graphics.color)) list list
+  val tautology : (bool * (int * Graphics.color)) list list
 
-val select : bool -> int -> int list -> (bool * int) list list
+  val get_function_color : Graphics.color ->
+                           (int -> int -> int -> int -> int list ->
+                            (bool * (int * Graphics.color)) list list)
 
-val at_least : bool -> int -> int list -> (bool * int) list list
+  val basics : int -> (bool * (int * Graphics.color)) list list
+
+end

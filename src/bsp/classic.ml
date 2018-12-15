@@ -2,11 +2,12 @@ open Graphics
 open Geometry
 open Bsp
 
-module Bsp_classic : Bsp_type = struct
+module Make (C : Settings.Colors) : Bsp_type = struct
+
   type label = {
-      color   : color;
-      section : float;
-      id      : int;
+      label_color   : color;
+      label_section : float;
+      label_id      : int;
     }
 
   type bsp = L of label * bsp * bsp | R of region_label
@@ -14,13 +15,13 @@ module Bsp_classic : Bsp_type = struct
   let pp v pt1 pt2 depth =
     if depth mod 2 = 0
     then
-      {pt1 = {x = v.section; y = pt2.y}; pt2 = {x = v.section; y = pt1.y}},
-      (pt1, {x = v.section; y = pt2.y}),
-      ({x = v.section; y = pt1.y}, pt2)
+      {pt1 = {x = v.label_section; y = pt2.y}; pt2 = {x = v.label_section; y = pt1.y}},
+      (pt1, {x = v.label_section; y = pt2.y}),
+      ({x = v.label_section; y = pt1.y}, pt2)
     else
-      {pt1 = {x = pt2.x; y = v.section}; pt2 = {x = pt1.x; y = v.section}},
-      (pt1, {x = pt2.x; y = v.section}),
-      ({x = pt1.x; y = v.section}, pt2)
+      {pt1 = {x = pt2.x; y = v.label_section}; pt2 = {x = pt1.x; y = v.label_section}},
+      (pt1, {x = pt2.x; y = v.label_section}),
+      ({x = pt1.x; y = v.label_section}, pt2)
 
   let change_color ?(reverse=false) bsp pt =
     let rec change_color_depth bsp pt depth =
@@ -28,12 +29,12 @@ module Bsp_classic : Bsp_type = struct
       | L (v, left, right) ->
          let is_left =
            if depth mod 2 = 0
-           then pt.x < v.section
-           else pt.y < v.section in
+           then pt.x < v.label_section
+           else pt.y < v.label_section in
          if is_left
          then L(v, change_color_depth left pt (depth + 1), right)
          else L(v, left, change_color_depth right pt (depth + 1))
-      | R r -> R {r with color = next_color reverse r.color}
+      | R r -> R {r with region_color = C.next_color reverse r.region_color}
     in
     change_color_depth bsp pt 0
 
@@ -56,14 +57,14 @@ module Bsp_classic : Bsp_type = struct
       try
         if depth mod 2 = 0
         then let x = gen_rand pt2.x pt1.x in
-             L ({color = 0;section = x; id = 0},
+             L ({label_color = 0;label_section = x; label_id = 0},
                 generate_random_bsp_depth pt1 {x = x; y = pt2.y} (depth + 1),
                 generate_random_bsp_depth {x = x; y = pt1.y} pt2 (depth + 1))
         else let y = gen_rand pt2.y pt1.y in
-             L ({color = 0;section = y; id = 0},
+             L ({label_color = 0;label_section = y; label_id = 0},
                 generate_random_bsp_depth pt1 {x = pt2.x; y = y} (depth + 1),
                 generate_random_bsp_depth {x = pt1.x; y = y} pt2 (depth + 1))
-      with _ -> R {id = 0; color = rand_color ()}
+      with _ -> R {region_id = 0; region_color = C.rand_color ()}
     in
     let bsp =
       generate_random_bsp_depth
@@ -73,18 +74,18 @@ module Bsp_classic : Bsp_type = struct
 
   let region c = R c
 
-  let node (line: line_label) left right =
+  let node line left right =
     if line.section.pt1.x = line.section.pt2.x
     then
-      L({section = line.section.pt1.x; id = line.id; color = line.color}, left, right)
+      L({label_section = line.section.pt1.x; label_id = line.line_id; label_color = line.line_color}, left, right)
     else
-      L({section = line.section.pt1.y; id = line.id; color = line.color}, left, right)
+      L({label_section = line.section.pt1.y; label_id = line.line_id; label_color = line.line_color}, left, right)
 
   let to_line_label (v: label) line : line_label =
     {
       section = line;
-      color = v.color;
-      id = v.id;
+      line_color = v.label_color;
+      line_id = v.label_id;
     }
 
   let fold bound_x bound_y f g bsp =
@@ -113,4 +114,4 @@ module Bsp_classic : Bsp_type = struct
 
 end
 
-module Bsp = Bsp.Make (Bsp_classic)
+module Bsp (S : Settings.Game_settings) (C : Settings.Colors) = Bsp.Make(S)(Make(C))
