@@ -7,8 +7,8 @@ let open_window
       ?(height=window_height)
       () =
   open_graph (" " ^
-                (string_of_int width) ^ "x" ^
-                  (string_of_int height));
+                (string_of_int !width) ^ "x" ^
+                  (string_of_int !height));
 
   set_window_title title;
   auto_synchronize false;
@@ -36,4 +36,18 @@ let open_window
   with Exit -> ();
   close_graph ()
 
-let _ = open_window ()
+let _ =
+  if Array.length Sys.argv >= 3
+  then begin
+      let x = int_of_string_opt Sys.argv.(1) in
+      let y = int_of_string_opt Sys.argv.(2) in
+      match x, y with
+      | Some x, Some y ->
+         if x >= 600 && y >=600
+         then begin
+             window_width := x;
+             window_height := y;
+           end
+      | _, _ -> ()
+    end;
+  open_window ()

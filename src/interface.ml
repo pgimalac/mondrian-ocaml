@@ -1,14 +1,15 @@
 open Graphics
 open Geometry
 
-let window_width = 600
-let window_height = 700
+let menu_height = 100
+let window_width = ref 600
+let window_height = ref 600
 
-let board_width_i = window_width
-let board_height_i = window_width
+let board_width_i () = !window_width
+let board_height_i () = !window_height - menu_height
 
-let board_width = float_of_int board_width_i
-let board_height = float_of_int board_height_i
+let board_width () = board_width_i () |> float_of_int
+let board_height () = board_height_i () |> float_of_int
 
 exception Exit
 

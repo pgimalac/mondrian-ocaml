@@ -34,7 +34,7 @@ let buttons =
   ]
 
 let slide_bar_width = 200
-let slide_bar_x = (window_width - slide_bar_width) / 2
+let slide_bar_x = (!window_width - slide_bar_width) / 2
 let slide_bar_xx = slide_bar_x + slide_bar_width
 let slide_bar_height = 30
 let slide_bar_padding = 10
@@ -88,7 +88,7 @@ let slide_bar title y min max value st_opt =
 let show_title () =
   let title = "Mondrian" in
   let w, h = text_size title in
-  let x_title = (window_width - w) / 2 in
+  let x_title = (!window_width - w) / 2 in
   let y_title = 600 in
 
   set_color black;

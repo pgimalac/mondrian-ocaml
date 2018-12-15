@@ -1,15 +1,15 @@
 (** Global definitions for all pages *)
 
 (** dimensions of the window *)
-val window_width : int
-val window_height : int
+val window_width : int ref
+val window_height : int ref
 
 (** dimensions of the bsp area in game *)
-val board_width_i : int
-val board_height_i : int
+val board_width_i : unit -> int
+val board_height_i : unit -> int
 
-val board_width : float
-val board_height : float
+val board_width : unit -> float
+val board_height : unit -> float
 
 (** Global exception to exit the game *)
 exception Exit

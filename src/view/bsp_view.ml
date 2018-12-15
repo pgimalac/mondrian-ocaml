@@ -33,7 +33,7 @@ module Make
          (B : Bsp_complete) : Bsp_view = struct
 
   let bsp, nb_lines =
-    let b, nb = B.generate_random_bsp board_width board_height S.min_area in
+    let b, nb = B.generate_random_bsp (board_width ()) (board_height ()) S.min_area in
     ref b, nb
 
   let adjacency = ref [| |]
@@ -49,12 +49,12 @@ module Make
             (Array.of_list pts)
         in
         fill_poly poly)
-      bsp board_width board_height;
+      bsp (board_width ()) (board_height ());
     B.iter_line
       (fun l -> draw_line black wrap_line_width l.section;
              draw_line l.line_color colored_line_width l.section)
-      bsp board_width board_height;
-    let _, e = edges board_width board_height in
+      bsp (board_width ()) (board_height ());
+    let _, e = edges (board_width ()) (board_height ()) in
     List.iter
       (fun x ->
         draw_line black wrap_line_width x;
@@ -72,11 +72,11 @@ module Make
       !adjacency.(line.line_id)
 
   let is_win () =
-    B.is_solution board_width board_height !adjacency !bsp
+    B.is_solution (board_width ()) (board_height ()) !adjacency !bsp
 
   let w = 100
   let h = 50
-  let y = 625.
+  let y = board_height () +. 25.
   let x_margin = 10.
   let x_pos i = x_margin +. ((2. *. x_margin) +. (float_of_int w)) *. (float_of_int i)
 
@@ -98,17 +98,17 @@ module Make
   let text = ref ""
 
   let help_hdl () =
-    let x = B.get_clue board_width board_height !adjacency !bsp in
+    let x = B.get_clue (board_width ()) (board_height ()) !adjacency !bsp in
     let _ = match x with
       | None -> text := no_solution_msg;
       | Some (n, c) -> begin
-          match C.index c, B.find_center !bsp board_width board_height n with
+          match C.index c, B.find_center !bsp (board_width ()) (board_height ()) n with
           | _, None -> failwith "Help : incorrect zone number"
           | None, _ -> failwith "Help : incorrect color"
           | Some i, _ when i < 1 -> failwith "Help : incorrect color"
           | Some i, Some pt ->
              history := (pt, i) :: !history;
-             bsp := B.color_nth board_width board_height !bsp n c
+             bsp := B.color_nth (board_width ()) (board_height ()) !bsp n c
         end
     in
     if is_win ()
@@ -117,7 +117,7 @@ module Make
 
   let sol_hdl () =
     text :=
-      if B.has_solution board_width board_height !adjacency !bsp
+      if B.has_solution (board_width ()) (board_height ()) !adjacency !bsp
       then has_solution_msg
       else no_solution_msg;
     None
@@ -126,7 +126,7 @@ module Make
 
   let clean_hdl () =
     history := [];
-    bsp := B.clean board_width board_height !bsp;
+    bsp := B.clean (board_width ()) (board_height ()) !bsp;
     None
 
   let cancel_hdl () =
@@ -152,16 +152,16 @@ module Make
   let plot st =
     set_color black;
     let w, h = text_size !text in
-    moveto ((window_width - w) / 2) (board_height_i + gap);
+    moveto ((!window_width - w) / 2) ((board_height_i ()) + gap);
     draw_string !text;
 
     show_buttons st interface_button;
     plot_bsp !bsp
 
   let color_lines () =
-    bsp := B.init board_width board_height !bsp;
-    adjacency := B.get_lines_area board_width board_height !bsp nb_lines;
-    let colors = B.colors board_width board_height !bsp in
+    bsp := B.init (board_width ()) (board_height ()) !bsp;
+    adjacency := B.get_lines_area (board_width ()) (board_height ()) !bsp nb_lines;
+    let colors = B.colors (board_width ()) (board_height ()) !bsp in
     let change_line_color line left right =
       let size, r, b, g = count line colors in
       let label =
@@ -182,19 +182,19 @@ module Make
       B.node label left right
     in
     bsp :=
-      B.fold board_width board_height
+      B.fold (board_width ()) (board_height ())
         change_line_color
         B.region
         !bsp;
-    bsp := B.clean board_width board_height !bsp
+    bsp := B.clean (board_width ()) (board_height ()) !bsp
 
   let view () =
     color_lines ();
     let hdl e =
       if not e.button
       then None
-      else if (float_of_int e.mouse_x) < board_width &&
-                (float_of_int e.mouse_y) < board_height
+      else if (float_of_int e.mouse_x) < (board_width ()) &&
+                (float_of_int e.mouse_y) < (board_height ())
       then begin
           history := ({
                          x = float_of_int e.mouse_x;
