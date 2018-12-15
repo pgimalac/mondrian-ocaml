@@ -57,7 +57,7 @@ module Make (C : Settings.Colors) : Bsp_type = struct
          in if Random.float 1. < 0.5
             then L(l, add_random_line left leftPts (localDepth - 1) min_area, right)
             else L(l, left, add_random_line right rightPts (localDepth - 1) min_area)
-      | R c ->
+      | R _ ->
          let pts = List.sort (compare_counter_clockwise (center pts)) pts in
          let ptsArr = Array.of_list pts in
          let new_line = gen_random_lines ptsArr in

@@ -1,7 +1,7 @@
 open Graphics
 
 type game_mode = Classic | Extrem
-type color_mode = RBColor | RGBColor
+type color_mode = RGColor | RGBColor
 
 module type Game_settings = sig
   val mode : game_mode
@@ -30,13 +30,13 @@ module Make_Colors (S : Game_settings) = struct
 
   let nb_colors =
     match S.color with
-    | RBColor -> 2
+    | RGColor -> 2
     | RGBColor -> 3
 
   let game_colors =
     match S.color with
     | RGBColor -> game_colors
-    | RBColor -> head game_colors
+    | RGColor -> head game_colors
 
   let index color =
     let rec iter acc l =

@@ -4,9 +4,9 @@
 type game_mode = Classic | Extrem
 
 (** This type denote the nymber of colors you want in your bsp's regions
-    RBColor is 2 colors: red and blue
+    RGColor is 2 colors: red and blue
     RGBColor is the extented version with 3 colors: red blue and green*)
-type color_mode = RBColor | RGBColor
+type color_mode = RGColor | RGBColor
 
 (** This module represents the configuration of the game for a single game *)
 module type Game_settings = sig

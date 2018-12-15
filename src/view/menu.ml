@@ -12,7 +12,7 @@ let min_black = 0
 let game_mode = ref Classic
 let area = ref ((max_area + min_area) / 2)
 let black_probability = ref ((max_black + min_black) / 2)
-let color_mode = ref RBColor
+let color_mode = ref RGColor
 
 let game_mode_buttons, show_game_mode_buttons =
   buttons_groups
@@ -24,7 +24,7 @@ let game_mode_buttons, show_game_mode_buttons =
 let game_color_buttons, show_game_color_buttons =
   buttons_groups
     [
-      create_button "2 Colors" 180. 450. 110 75, (fun () -> color_mode := RBColor);
+      create_button "2 Colors" 180. 450. 110 75, (fun () -> color_mode := RGColor);
       create_button "3 Colors" 310. 450. 110 75, (fun () -> color_mode := RGBColor);
     ]
 
@@ -74,7 +74,7 @@ let slide_bar title y min max value st_opt =
   moveto x (y - 10);
   lineto x (y + 10);
 
-  let w, h = text_size title in
+  let w, _ = text_size title in
   moveto ((slide_bar_width - w) / 2 + slide_bar_x) (y + slide_bar_height / 2);
   draw_string title;
 
@@ -87,7 +87,7 @@ let slide_bar title y min max value st_opt =
 
 let show_title () =
   let title = "Mondrian" in
-  let w, h = text_size title in
+  let w, _ = text_size title in
   let x_title = (!window_width - w) / 2 in
   let y_title = 600 in
 
@@ -121,7 +121,7 @@ let show_menu st =
   show_game_color_buttons ();
   show_buttons (Some st)
 
-let create_page st =
+let create_page _ =
   let module B  =
     struct
       let mode = !game_mode
@@ -144,8 +144,8 @@ let select_mode st =
     in
     match hovers with
     | None -> None
-    | Some (btn, hdl) when btn.text = "Play" -> create_page st
-    | Some (btn, hdl) -> hdl (); None
+    | Some (btn, _) when btn.text = "Play" -> create_page st
+    | Some (_, hdl) -> hdl (); None
 
 let menu =
   {

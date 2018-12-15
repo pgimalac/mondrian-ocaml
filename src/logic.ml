@@ -44,23 +44,23 @@ module Make (S : Game_settings) = struct
 
   let basics =
     match S.color with
-    | RBColor -> basics_two
+    | RGColor -> basics_two
     | RGBColor -> basics_three
 
   (* at least k variables in l are c *)
-  let at_least (c:Graphics.color) k l =
+  let at_least c k l =
     if k <= 0
     then tautology
     else
-      let f = (fun (i:int) -> (true, (i, c))) in
+      let f = (fun i -> (true, (i, c))) in
       subsets f (List.length l + 1 - k) l
 
   (* at most k variables in l are c *)
-  let at_most (c:Graphics.color) k l =
+  let at_most c k l =
     if k < 0
     then antilogy
     else
-      let f = (fun (i:int) -> (false, (i, c))) in
+      let f = (fun i -> (false, (i, c))) in
       subsets f (k + 1) l
 
   (* red/green/blue means the color is strictly more than half of areas *)
@@ -135,7 +135,7 @@ module Make (S : Game_settings) = struct
     else if color = Graphics.cyan then get_cyan
     else if color = Graphics.yellow then begin
         match S.color with
-        | RBColor -> get_yellow_two
+        | RGColor -> get_yellow_two
         | RGBColor -> get_yellow
       end
     else failwith "get_function_color : unknown color"

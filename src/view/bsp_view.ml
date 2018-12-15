@@ -7,7 +7,7 @@ let gap = 5
 let wrap_line_width = 5
 let colored_line_width = 3
 
-let show_win_page st =
+let show_win_page _ =
   set_color black;
   moveto 100 100;
   draw_string "winner"
@@ -87,13 +87,10 @@ module Make
   let sol_btn i = create_button "Exists solution ?" (x_pos i) y w h ~bkg:blue ~bkg_hover:red
 
   let no_history_msg = "No history"
-  let w_no_hist, h_no_hist = text_size no_history_msg
 
   let no_solution_msg = "No solution"
-  let w_no_sol, h_no_sol = text_size no_solution_msg
 
   let has_solution_msg = "There is a solution"
-  let w_has_sol, h_has_sol = text_size has_solution_msg
 
   let text = ref ""
 
@@ -134,7 +131,7 @@ module Make
       | [] ->
          text := no_history_msg;
       | (pt, n) :: tl ->
-         for i = 1 to n do
+         for _ = 1 to n do
            bsp := B.change_color ~reverse:true !bsp pt
          done;
          history := tl;
@@ -151,7 +148,7 @@ module Make
 
   let plot st =
     set_color black;
-    let w, h = text_size !text in
+    let w, _ = text_size !text in
     moveto ((!window_width - w) / 2) ((board_height_i ()) + gap);
     draw_string !text;
 
@@ -207,8 +204,8 @@ module Make
           then Some (win_page ())
           else None
         end
-      else match List.find_opt (fun (btn, h) -> is_click btn e) interface_button with
-           | Some (btn, h) ->
+      else match List.find_opt (fun (btn, _) -> is_click btn e) interface_button with
+           | Some (_, h) ->
               text := "";
               h ()
            | _ -> None
@@ -217,16 +214,15 @@ module Make
 end
 
 let make_game_view (module S : Settings.Game_settings) =
+  let module C = Settings.Make_Colors(S) in
   match S.mode with
-  | Classic ->
-     let module C = Settings.Make_Colors(S) in
+  | Settings.Classic ->
      let module M = Make(S)(C)(Classic.Bsp(S)(C)) in
      {
        plot = M.plot;
        handler = M.view ()
      }
-  | Extrem ->
-     let module C = Settings.Make_Colors(S) in
+  | Settings.Extrem ->
      let module M = Make(S)(C)(Extrem.Bsp(S)(C)) in
      {
        plot = M.plot;
