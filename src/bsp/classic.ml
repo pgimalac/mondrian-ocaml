@@ -2,7 +2,8 @@ open Graphics
 open Geometry
 open Bsp
 
-module Bsp_classic : Bsp_type = struct
+module Make (C : Settings.Colors) : Bsp_type = struct
+
   type label = {
       label_color   : color;
       label_section : float;
@@ -33,23 +34,22 @@ module Bsp_classic : Bsp_type = struct
          if is_left
          then L(v, change_color_depth left pt (depth + 1), right)
          else L(v, left, change_color_depth right pt (depth + 1))
-      | R r -> R {r with region_color = next_color reverse r.region_color}
+      | R r -> R {r with region_color = C.next_color reverse r.region_color}
     in
     change_color_depth bsp pt 0
 
   exception ToSmallArea
-  let min_area = 50.
-  let area_range = min_area /. 5.
 
-  let generate_random_bsp bound_x bound_y =
+  let generate_random_bsp bound_x bound_y min_area =
+    let min_area = float_of_int min_area in
     let nb = ref 0 in
     let rec gen_while max min =
       let i = (Random.float (max -. min)) +. min in
-      if max -. i < area_range || i -. min < area_range
+      if max -. i < 10. || i -. min < 10.
       then gen_while max min
       else i
     and gen_rand max min =
-      if max -. min < min_area
+      if (max -. min) *. (max -. min) < min_area
       then raise ToSmallArea
       else gen_while max min
     and generate_random_bsp_depth pt1 pt2 depth =
@@ -64,7 +64,7 @@ module Bsp_classic : Bsp_type = struct
              L ({label_color = 0;label_section = y; label_id = 0},
                 generate_random_bsp_depth pt1 {x = pt2.x; y = y} (depth + 1),
                 generate_random_bsp_depth {x = pt1.x; y = y} pt2 (depth + 1))
-      with _ -> R {region_id = 0; region_color = rand_color ()}
+      with _ -> R {region_id = 0; region_color = C.rand_color ()}
     in
     let bsp =
       generate_random_bsp_depth
@@ -114,4 +114,4 @@ module Bsp_classic : Bsp_type = struct
 
 end
 
-module Bsp = Bsp.Make (Bsp_classic)
+module Bsp (S : Settings.Game_settings) (C : Settings.Colors) = Bsp.Make(S)(Make(C))

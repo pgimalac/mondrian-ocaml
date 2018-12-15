@@ -15,7 +15,7 @@ module type Bsp_type = sig
 
   val change_color : ?reverse:bool -> bsp -> point -> bsp
 
-  val generate_random_bsp : float -> float -> bsp * int
+  val generate_random_bsp : float -> float -> int -> bsp * int
 
   val region : region_label -> bsp
 
@@ -45,6 +45,8 @@ module type Bsp_complete = sig
   val clean : float -> float -> bsp -> bsp
 
   val get_lines_area : float -> float -> bsp -> int -> int list array
+
+  val for_all_lines : float -> float -> (line_label -> bool) -> bsp -> bool
 
   val init : float -> float -> bsp -> bsp
 
@@ -78,7 +80,9 @@ module type Bsp_complete = sig
 
 end
 
-module Make (B : Bsp_type) = struct
+module Make (S : Settings.Game_settings) (B : Bsp_type) = struct
+
+  module L = Logic.Make (S)
 
   include B
 
@@ -203,21 +207,20 @@ module Make (B : Bsp_type) = struct
             b + (if color = blue then 1 else 0),
             if color = white then id :: l else l)
           (0, 0, 0, 0, []) adjacency.(line.line_id) in
-      let f = Logic.get_function_color line.line_color in
+      let f = L.get_function_color line.line_color in
       f size r g b l
     in
-    let basic = Logic.basics () in
-    let fnc = ref [] in
-    iter bound_x bound_y
-      (fun line _ ->
-        fnc := List.rev_append (get_fnc_line line) !fnc;
-        (0,0)
-      ) (fun r _ ->
+    let basic = L.basics in
+    fold bound_x bound_y
+      (fun line left right ->
+        get_fnc_line line
+        |> List.rev_append left
+        |> List.rev_append right)
+      (fun r ->
         if r.region_color = white
-        then fnc := List.rev_append (basic r.region_id) !fnc
-      ) 0 bsp;
-    print_endline "done"; flush stdout;
-    !fnc
+        then basic r.region_id
+        else [])
+      bsp
 
   let get_solution bound_x bound_y adjacency bsp =
     get_fnc bound_x bound_y adjacency bsp
@@ -240,28 +243,30 @@ module Make (B : Bsp_type) = struct
     (get_solution bound_x bound_y adjacency bsp) <> None
 
   let is_solution bound_x bound_y adjacency bsp =
-    let is_full bsp =
-      fold bound_x bound_y
-        (fun _ l r -> l && r)
-        (fun region -> region.region_color != white)
-        bsp
-    in
-    if is_full bsp
-    then true
-    else
-      let region_colors = colors bound_x bound_y bsp in
-      for_all_lines bound_x bound_y
-        (fun line ->
-          let r, b =
-            List.fold_left
-              (fun (r, b) id ->
-                let c = region_colors.(id) in
-                (if c = red then 1 else 0) + r, (if c = blue then 1 else 0) + b)
-              (0, 0) adjacency.(line.line_id) in
-          if line.line_color = red then r > b
-          else if line.line_color = blue then r < b
-          else r = b)
-        bsp
+    let region_colors = colors bound_x bound_y bsp in
+    for_all_lines bound_x bound_y
+      (fun line ->
+        let size, r, b, g =
+          List.fold_left
+            (fun (s, r, b, g) id ->
+              if region_colors.(id) = red
+              then s + 1, r + 1, b, g
+              else if region_colors.(id) = blue
+              then s + 1, r, b + 1, g
+              else if region_colors.(id) = green
+              then s + 1, r, b, g + 1
+              else s + 1, r, b, g)
+            (0, 0, 0, 0) adjacency.(line.line_id) in
+        if line.line_color = black then true
+        else if line.line_color = red then 2 * r > size
+        else if line.line_color = blue then 2 * b > size
+        else if line.line_color = green then 2 * g > size
+        else
+          let c = (if 4 * r >= size then red else 0) +
+                    (if 4 * g >= size then green else 0) +
+                    (if 4 * b >= size then blue else 0)
+          in c = line.line_color)
+      bsp
 
   let find_center bsp bound_x bound_y n =
     let opt = ref None in
@@ -270,64 +275,6 @@ module Make (B : Bsp_type) = struct
         if label.region_id = n
         then opt := Some (center pts)
       ) bsp bound_x bound_y;
-      !opt
+    !opt
+
 end
-
-let colors = [white; red; green; blue]
-let nb_colors = List.length colors - 1
-
-let rec head l =
-  match l with
-  | a :: b :: q -> a :: (b :: q |> head)
-  | _ -> []
-
-let index color =
-  let colors =
-    if Logic.get_three_colors ()
-    then colors
-    else head colors
-  in
-  let rec iter acc l = match l with
-    | h :: q ->
-      if h = color
-      then Some acc
-      else iter (acc + 1) q
-    | [] -> None
-  in iter 0 colors
-
-let next_color reverse c =
-  let colors =
-    if Logic.get_three_colors ()
-    then colors
-    else head colors
-  in
-  let nb_colors =
-    if Logic.get_three_colors ()
-    then nb_colors
-    else nb_colors - 1
-  in
-  let rec aux tab =
-    match tab with
-    | hd1 :: hd2 :: _ when hd1 = c -> hd2
-    | hd :: [] when hd = c -> List.hd colors
-    | _ :: tl -> aux tl
-    | [] -> aux colors
-  in
-  let rec aux_r tab =
-    match tab with
-    | hd1 :: hd2 :: _ when hd2 = c -> hd1
-    | _ :: tl -> aux_r tl
-    | [] -> List.nth colors nb_colors
-  in (if reverse then aux_r else aux) colors
-
-let rand_color () =
-  let nb_colors =
-    if Logic.get_three_colors ()
-    then nb_colors
-    else nb_colors - 1
-  in List.nth colors ((Random.int nb_colors) + 1)
-
-let _ =
-  Random.self_init ();
-  Logic.set_three_colors true
-

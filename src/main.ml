@@ -1,34 +1,53 @@
-open View
+open Graphics
+open Interface
 
-let rec handler = ref select_mode
+let open_window
+      ?(title=" Mondrian")
+      ?(width=window_width)
+      ?(height=window_height)
+      () =
+  open_graph (" " ^
+                (string_of_int !width) ^ "x" ^
+                  (string_of_int !height));
 
-and select_mode st =
-  match menu (Some st) with
-  | None -> ()
-  | Some Classic ->
-     let module B = View.Make (Classic.Bsp) in
-     handler := B.view ();
-     B.plot ()
-  | Some Extrem ->
-     let module B = View.Make (Extrem.Bsp) in
-     handler := B.view ();
-     B.plot ()
+  set_window_title title;
+  auto_synchronize false;
 
-let main () =
+  let page = ref Menu.menu in
+  Menu.show_on_open ();
+  synchronize ();
+
+  let rec loop e =
+    !page.plot e;
+    synchronize ();
+    let e = wait_next_event [Mouse_motion; Button_down] in
+    let _ =
+      clear_graph ();
+      match !page.handler e with
+      | Some p -> page := p;
+      | None -> ()
+    in
+    loop e
+  in
+
+  try
+    let e = wait_next_event [Mouse_motion; Button_down] in
+    loop e;
+  with Exit -> ();
+  close_graph ()
+
+let _ =
   if Array.length Sys.argv >= 3
   then begin
-    let x = int_of_string_opt Sys.argv.(1) in
-    let y = int_of_string_opt Sys.argv.(2) in
-    match x, y with
-    | Some x, Some y ->
-      if x >= 600 && y >=600
-      then begin
-        set_window_width x; set_window_height y
-      end
-    | _, _ -> ()
-  end;
-  do_with_window
-    ~on_open:(fun () -> ignore(menu None))
-    (fun e -> !handler e)
-
-let _ = main ()
+      let x = int_of_string_opt Sys.argv.(1) in
+      let y = int_of_string_opt Sys.argv.(2) in
+      match x, y with
+      | Some x, Some y ->
+         if x >= 600 && y >=600
+         then begin
+             window_width := x;
+             window_height := y;
+           end
+      | _, _ -> ()
+    end;
+  open_window ()

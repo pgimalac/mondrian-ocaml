@@ -20,3 +20,16 @@ Changelog
 * Implements handlers for _Help_ and _Exists solution_ buttons
 * Generate fnc representing the game status and solve with the sat solver
 * Fix line coloration
+
+### Implements 3 colors version
+* Change 2 colors version to green and red
+* Implements 3 colors game version
+* Add black line with a given probability
+
+### PR #17 User interface improvements
+
+* Seperate view code in differents folders and files for more readability
+* Fix issue #16, Detect when the player win the game and show a new screen
+* Fix issue #15, Add more options on the main page
+* Add module `Game_settings` to manage user preference
+* Change `Classic.Bsp` and `Extrem.Bsp` into functors

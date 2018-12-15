@@ -17,7 +17,7 @@ module type Bsp_type = sig
   val change_color : ?reverse:bool -> bsp -> Geometry.point -> bsp
 
   (** Generate a complete random bsp *)
-  val generate_random_bsp : float -> float -> bsp * int
+  val generate_random_bsp : float -> float -> int -> bsp * int
 
   (** Constructor for a leaf of the bsp *)
   val region : Geometry.region_label -> bsp
@@ -66,6 +66,8 @@ module type Bsp_complete = sig
   val clean : float -> float -> bsp -> bsp
 
   val get_lines_area : float -> float -> bsp -> int -> int list array
+
+  val for_all_lines : float -> float -> (Geometry.line_label -> bool) -> bsp -> bool
 
   (** set unique id for each region and line *)
   val init : float -> float -> bsp -> bsp
@@ -116,13 +118,4 @@ module type Bsp_complete = sig
 end
 
 (** Construct a complete bsp from the minimum implementation *)
-module Make : functor (B : Bsp_type) -> Bsp_complete
-
-(** returns the index of the given color into the list, None if it isn't in *)
-val index : Graphics.color -> int option
-
-(** iter through colors, in reversed order if the given boolean is true *)
-val next_color : bool -> Graphics.color -> Graphics.color
-
-(** return a random color among non-white colors *)
-val rand_color : unit -> Graphics.color
+module Make : functor (S : Settings.Game_settings) (B : Bsp_type) -> Bsp_complete
