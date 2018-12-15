@@ -6,8 +6,6 @@
     function each time an event is fired *)
 val do_with_window:
   ?title:string ->
-  ?width:int ->
-  ?height:int ->
   ?on_open:(unit -> unit) ->
   (Graphics.status -> unit) ->
   unit
@@ -33,3 +31,6 @@ end
 
 (** Functor to create user interface functions from bsp generic implementation *)
 module Make : functor (B : Bsp.Bsp_complete) -> Bsp_view
+
+val set_window_width : int -> unit
+val set_window_height : int -> unit

@@ -6,29 +6,39 @@ let gap = 5
 let wrap_line_width = 5
 let colored_line_width = 3
 
-let window_width = 600
-let window_height = 700
+let menu_height = 100
 
-let board_width_i = window_width
-let board_height_i = window_width
+let window_width = ref 600
+let window_height = ref 700
 
-let board_width = float_of_int board_width_i
-let board_height = float_of_int board_height_i
+let board_width_i = ref !window_width
+let board_height_i = ref (!window_height - menu_height)
+
+let board_width = ref (float_of_int !board_width_i)
+let board_height = ref (float_of_int !board_height_i)
 
 (* the probability of a black line is 1 / black_probability *)
 let black_probability = ref 25
+
+let set_window_width x =
+  window_width := x;
+  board_width_i := x;
+  board_width := float_of_int x
+
+let set_window_height y =
+  window_height := y;
+  board_height_i := y - menu_height;
+  board_height := float_of_int !board_height_i
 
 exception Exit
 
 let do_with_window
       ?(title=" Mondrian")
-      ?(width=window_width)
-      ?(height=window_height)
       ?(on_open=ignore)
       f =
   open_graph (" " ^
-                (string_of_int width) ^ "x" ^
-                  (string_of_int height));
+                (string_of_int !window_width) ^ "x" ^
+                  (string_of_int !window_height));
 
   set_window_title title;
 
@@ -99,7 +109,7 @@ type game_mode = Classic | Extrem
 let menu st =
   let title = "Mondrian" in
   let w, _ = text_size title in
-  let x_title = (window_width - w) / 2 in
+  let x_title = (!window_width - w) / 2 in
   let y_title = 450 in
 
   let buttons =
@@ -142,7 +152,7 @@ end
 module Make (B : Bsp_complete) : Bsp_view = struct
 
   let bsp, nb_lines =
-    let b, nb = B.generate_random_bsp board_width board_height in
+    let b, nb = B.generate_random_bsp !board_width !board_height in
     ref b, nb
 
   let adjacency = ref [| |]
@@ -150,12 +160,12 @@ module Make (B : Bsp_complete) : Bsp_view = struct
 
   let clean_text () =
     set_color white;
-    fill_rect 0 window_width window_width 100
+    fill_rect 0 !window_width !window_width 100
 
   let interface_button =
     let w = 100 in
     let h = 50 in
-    let y = 625. in
+    let y = !board_height +. 25. in
     let x_margin = 10. in
     let x_pos i = x_margin +. ((2. *. x_margin) +. (float_of_int w)) *. (float_of_int i) in
 
@@ -175,42 +185,42 @@ module Make (B : Bsp_complete) : Bsp_view = struct
     let w_has_sol, _ = text_size has_solution_msg in
 
     let help_hdl () =
-      let x = B.get_clue board_width board_height !adjacency !bsp in
+      let x = B.get_clue !board_width !board_height !adjacency !bsp in
       match x with
       | None -> ()
       | Some (n, c) -> begin
-        match Bsp.index c, B.find_center !bsp board_width board_height n with
+        match Bsp.index c, B.find_center !bsp !board_width !board_height n with
         | _, None -> failwith "Help : incorrect zone number"
         | None, _ -> failwith "Help : incorrect color"
         | Some i, _ when i < 1 -> failwith "Help : incorrect color"
         | Some i, Some pt ->
           history := (pt, i) :: !history;
-          bsp := B.color_nth board_width board_height !bsp n c
+          bsp := B.color_nth !board_width !board_height !bsp n c
       end
     in
     let sol_hdl () =
       clean_text ();
       set_color black;
-      if B.has_solution board_width board_height !adjacency !bsp
+      if B.has_solution !board_width !board_height !adjacency !bsp
       then begin
-        moveto ((window_width - w_has_sol) / 2) (board_height_i + gap);
+        moveto ((!window_width - w_has_sol) / 2) (!board_height_i + gap);
         draw_string has_solution_msg
       end
       else begin
-        moveto ((window_width - w_no_sol) / 2) (board_height_i + gap);
+        moveto ((!window_width - w_no_sol) / 2) (!board_height_i + gap);
         draw_string no_solution_msg
       end
     in
     let quit_hdl () = raise Exit in
     let clean_hdl () =
       history := [];
-      bsp := B.clean board_width board_height !bsp in
+      bsp := B.clean !board_width !board_height !bsp in
     let cancel_hdl () =
       match !history with
       | [] ->
          clean_text ();
          set_color black;
-         moveto ((window_width - w_no_hist) / 2) (board_height_i + gap);
+         moveto ((!window_width - w_no_hist) / 2) (!board_height_i + gap);
          draw_string no_history_msg
       | (pt, n) :: tl ->
         for _ = 1 to n do
@@ -234,12 +244,12 @@ module Make (B : Bsp_complete) : Bsp_view = struct
             (fun pt -> int_of_float pt.x, int_of_float pt.y) (Array.of_list pts)
         in
         fill_poly poly)
-      bsp board_width board_height;
+      bsp !board_width !board_height;
     B.iter_line
       (fun l -> draw_line black wrap_line_width l.section;
              draw_line l.line_color colored_line_width l.section)
-      bsp board_width board_height;
-    let _, e = edges board_width board_height in
+      bsp !board_width !board_height;
+    let _, e = edges !board_width !board_height in
     List.iter (fun x -> draw_line black wrap_line_width x; draw_line black colored_line_width x) e
 
   let plot () =
@@ -247,11 +257,11 @@ module Make (B : Bsp_complete) : Bsp_view = struct
     plot_bsp !bsp
 
   let color_lines () =
-    bsp := B.init board_width board_height !bsp;
-    adjacency := B.get_lines_area board_width board_height !bsp nb_lines;
-    let colors = B.colors board_width board_height !bsp in
+    bsp := B.init !board_width !board_height !bsp;
+    adjacency := B.get_lines_area !board_width !board_height !bsp nb_lines;
+    let colors = B.colors !board_width !board_height !bsp in
     bsp :=
-      B.fold board_width board_height
+      B.fold !board_width !board_height
         (fun line left right ->
           let size, r, g, b =
             List.fold_left
@@ -283,15 +293,15 @@ module Make (B : Bsp_complete) : Bsp_view = struct
           B.node label left right)
         B.region
         !bsp;
-    bsp := B.clean board_width board_height !bsp
+    bsp := B.clean !board_width !board_height !bsp
 
   let view () =
     color_lines ();
     let hdl e =
       if e.button
       then begin
-          if (float_of_int e.mouse_x) < board_width &&
-               (float_of_int e.mouse_y) < board_height
+          if (float_of_int e.mouse_x) < !board_width &&
+               (float_of_int e.mouse_y) < !board_height
           then begin
               history := ({
                 x = float_of_int e.mouse_x;
