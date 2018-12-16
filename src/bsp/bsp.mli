@@ -17,7 +17,7 @@ module type Bsp_type = sig
   val change_color : ?reverse:bool -> bsp -> Geometry.point -> bsp
 
   (** Generate a complete random bsp *)
-  val generate_random_bsp : float -> float -> int -> bsp * int
+  val generate_random_bsp : float -> float -> int -> int -> bsp * int
 
   (** Constructor for a leaf of the bsp *)
   val region : Geometry.region_label -> bsp

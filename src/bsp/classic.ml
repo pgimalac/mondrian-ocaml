@@ -38,9 +38,10 @@ module Make (C : Settings.Colors) : Bsp_type = struct
     in
     change_color_depth bsp pt 0
 
-  exception ToSmallArea
+  exception TooSmallArea
+  exception TooDeep
 
-  let generate_random_bsp bound_x bound_y min_area =
+  let generate_random_bsp bound_x bound_y max_depth min_area =
     let min_area = float_of_int min_area in
     let nb = ref 0 in
     let rec gen_while max min =
@@ -50,12 +51,14 @@ module Make (C : Settings.Colors) : Bsp_type = struct
       else i
     and gen_rand max min =
       if (max -. min) *. (max -. min) < min_area
-      then raise ToSmallArea
+      then raise TooSmallArea
       else gen_while max min
     and generate_random_bsp_depth pt1 pt2 depth =
       nb := !nb + 1;
       try
-        if depth mod 2 = 0
+        if depth = max_depth
+        then raise TooDeep
+        else if depth mod 2 = 0
         then let x = gen_rand pt2.x pt1.x in
              L ({label_color = 0;label_section = x; label_id = 0},
                 generate_random_bsp_depth pt1 {x = x; y = pt2.y} (depth + 1),

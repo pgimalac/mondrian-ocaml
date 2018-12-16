@@ -45,50 +45,52 @@ module Make (C : Settings.Colors) : Bsp_type = struct
            region_color= (C.next_color reverse region.region_color)
          }
 
+  exception TooSmallArea
+  exception TooDeep
+
   let rec nb = ref 0
 
   and add_random_line localBsp pts localDepth min_area =
-    if localDepth = 0
-    then localBsp
-    else
-      match localBsp with
-      | L (l, left, right) ->
-         let leftPts, rightPts = split_by_line l.section pts
-         in if Random.float 1. < 0.5
-            then L(l, add_random_line left leftPts (localDepth - 1) min_area, right)
-            else L(l, left, add_random_line right rightPts (localDepth - 1) min_area)
-      | R _ ->
-         let pts = List.sort (compare_counter_clockwise (center pts)) pts in
-         let ptsArr = Array.of_list pts in
-         let new_line = gen_random_lines ptsArr in
-         let left, right =
-           separate_points new_line
-             ([new_line.pt1; new_line.pt2], [new_line.pt1; new_line.pt2]) pts
-         in
-         let left = List.sort (compare_counter_clockwise (center left)) left in
-         let right = List.sort (compare_counter_clockwise (center right)) right in
-         if polygon_area left > min_area && polygon_area right > min_area
-         then begin
-             nb := !nb + 1;
-             L({line_color = 0; line_id = 0; section = new_line},
-                R {region_color = C.rand_color (); region_id = 0},
-                R {region_color = C.rand_color (); region_id = 0})
-           end
-         else localBsp
+    try
+      if localDepth = 0
+      then raise TooDeep
+      else
+        match localBsp with
+        | L (l, left, right) ->
+           let leftPts, rightPts = split_by_line l.section pts
+           in if Random.float 1. < 0.5
+              then L(l, add_random_line left leftPts (localDepth - 1) min_area, right)
+              else L(l, left, add_random_line right rightPts (localDepth - 1) min_area)
+        | R _ ->
+           let pts = List.sort (compare_counter_clockwise (center pts)) pts in
+           let ptsArr = Array.of_list pts in
+           let new_line = gen_random_lines ptsArr in
+           let left, right =
+             separate_points new_line
+               ([new_line.pt1; new_line.pt2], [new_line.pt1; new_line.pt2]) pts
+           in
+           let left = List.sort (compare_counter_clockwise (center left)) left in
+           let right = List.sort (compare_counter_clockwise (center right)) right in
+           if polygon_area left > min_area && polygon_area right > min_area
+           then begin
+               nb := !nb + 1;
+               L({line_color = 0; line_id = 0; section = new_line},
+                  R {region_color = C.rand_color (); region_id = 0},
+                  R {region_color = C.rand_color (); region_id = 0})
+             end
+           else raise TooSmallArea
+    with _ -> localBsp
 
-  and gen_random_bsp width height nb_lines maxDepth min_area =
-    if maxDepth >= 0 && (2. ** (float_of_int maxDepth)) >= (float_of_int nb_lines /. 2.)
-    then R {region_id = 0; region_color = C.rand_color ()}
-    else
-      let bsp = ref (R {region_id = 0; region_color = white}) in
-      let v, _ = edges width height in
-      for _ = 1 to nb_lines do
-        bsp := add_random_line !bsp v maxDepth min_area
-      done;
-      !bsp
+  and gen_random_bsp width height nb_lines max_depth min_area =
+    let bsp = ref (R {region_id = 0; region_color = white}) in
+    let v, _ = edges width height in
+    for _ = 1 to nb_lines do
+      bsp := add_random_line !bsp v max_depth min_area
+    done;
+    !bsp
 
-  and generate_random_bsp width height min_area =
-    let bsp = gen_random_bsp width height 100 (-1) (float_of_int min_area) in
+  and generate_random_bsp width height max_depth min_area =
+    let bsp = gen_random_bsp width height 10000 max_depth (float_of_int min_area) in
     bsp, !nb
 end
 

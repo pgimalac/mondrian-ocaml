@@ -33,7 +33,7 @@ module Make
          (B : Bsp_complete) : Bsp_view = struct
 
   let bsp, nb_lines =
-    let b, nb = B.generate_random_bsp (board_width ()) (board_height ()) S.min_area in
+    let b, nb = B.generate_random_bsp (board_width ()) (board_height ()) (-1) S.min_area in
     ref b, nb
 
   let adjacency = ref [| |]
