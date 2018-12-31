@@ -16,19 +16,25 @@ OBJ = $(SOURCES_FP:.ml=.cmo)
 OBJI = $(SOURCES_FP:.ml=.cmi)
 
 %.cmo: %.mli %.ml
-	$(CAMLC) $(FLAGS) $(LIBS) -c $? -o $@
+	@echo "Compiling $?"
+	@$(CAMLC) $(FLAGS) $(LIBS) -c $? -o $@
 
 %.cmo: %.ml
-	$(CAMLC) $(FLAGS) $(LIBS) -c $? -o $@
+	@echo "Compiling $?"
+	@$(CAMLC) $(FLAGS) $(LIBS) -c $? -o $@
 
 $(NAME): $(OBJ)
-	$(CAMLC) $(FLAGS) $(LIBS) $(OBJ) -o $(NAME)
+	@echo "Build excutable $(NAME)"
+	@$(CAMLC) $(FLAGS) $(LIBS) $(OBJ) -o $(NAME)
+	@echo "Done."
 
 clean:
-	rm -f $(OBJ) $(OBJI)
-	rm -f *~ .*~ #*#
+	@echo "Cleaning object files"
+	@rm -f $(OBJ) $(OBJI)
+	@rm -f *~ .*~ #*#
 
 fclean: clean
-	rm -f $(NAME)
+	@echo "Clean executable $(NAME)"
+	@rm -f $(NAME)
 
 re: fclean all

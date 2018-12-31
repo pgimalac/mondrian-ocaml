@@ -14,6 +14,7 @@ let open_window
   auto_synchronize false;
 
   let page = ref Menu.menu in
+  Bsp_view.menu_page := Some Menu.menu;
   Menu.show_on_open ();
   synchronize ();
 

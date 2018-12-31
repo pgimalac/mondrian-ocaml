@@ -3,20 +3,42 @@ open Graphics
 open Bsp
 open Interface
 
+let menu_page = ref None
+
 let gap = 5
 let wrap_line_width = 5
 let colored_line_width = 3
 
-let show_win_page _ =
-  set_color black;
-  moveto 100 100;
-  draw_string "winner"
+let win_text = "Congratulation !"
 
-let win_page () =
-  show_win_page ();
+let back_to_menu_button, back_to_menu_handler =
+  create_button "Back to menu" 200. 250. 200 75,
+  fun () -> match !menu_page with
+         | None -> raise Exit
+         | _ -> !menu_page
+
+let exit_button = create_button "Exit" 200. 150. 200 75
+
+let show_win_page st =
+  set_color black;
+  let w, h = text_size win_text in
+  moveto ((!window_width - w) / 2) (!window_height * 3 / 4);
+  draw_string win_text;
+  print_btn ~hover:(is_click back_to_menu_button st) back_to_menu_button;
+  print_btn ~hover:(is_click exit_button st) exit_button
+
+let win_page =
   {
     plot = show_win_page;
-    handler = fun st -> if st.button || st.keypressed then raise Exit; None
+    handler =
+      fun st ->
+      if st.button
+      then if is_click back_to_menu_button st
+           then back_to_menu_handler ()
+           else if is_click exit_button st
+           then raise Exit
+           else None
+      else None
   }
 
 module type Bsp_view = sig
@@ -109,7 +131,7 @@ module Make
         end
     in
     if is_win ()
-    then Some (win_page ())
+    then Some win_page
     else None
 
   let sol_hdl () =
@@ -119,7 +141,10 @@ module Make
       else no_solution_msg;
     None
 
-  let quit_hdl () = raise Exit
+  let quit_hdl () =
+    match !menu_page with
+    | None -> raise Exit
+    | _ -> !menu_page
 
   let clean_hdl () =
     history := [];
@@ -201,7 +226,7 @@ module Make
                      y = float_of_int e.mouse_y};
           text := "";
           if is_win ()
-          then Some (win_page ())
+          then Some win_page
           else None
         end
       else match List.find_opt (fun (btn, _) -> is_click btn e) interface_button with
@@ -214,6 +239,7 @@ module Make
 end
 
 let make_game_view (module S : Settings.Game_settings) =
+  clear_graph ();
   let module C = Settings.Make_Colors(S) in
   match S.mode with
   | Settings.Classic ->
