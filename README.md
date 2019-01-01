@@ -1,3 +1,8 @@
+# Equipe
+Maxime Flin 21601670
+
+Pierre Gimalac 21602236
+
 Mondrian
 ========
 
