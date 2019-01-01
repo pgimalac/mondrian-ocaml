@@ -21,7 +21,7 @@ let exit_button = create_button "Exit" 200. 150. 200 75
 
 let show_win_page st =
   set_color black;
-  let w, h = text_size win_text in
+  let w, _ = text_size win_text in
   moveto ((!window_width - w) / 2) (!window_height * 3 / 4);
   draw_string win_text;
   print_btn ~hover:(is_click back_to_menu_button st) back_to_menu_button;
