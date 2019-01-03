@@ -229,7 +229,15 @@ module Make
           then Some win_page
           else None
         end
-      else match List.find_opt (fun (btn, _) -> is_click btn e) interface_button with
+      else
+        let rec home_made_find_opt p l =
+          match l with
+          | h :: q -> if p h
+                      then Some h
+                      else home_made_find_opt p q
+          | [] -> None
+        in
+          match home_made_find_opt (fun (btn, _) -> is_click btn e) interface_button with
            | Some (_, h) ->
               text := "";
               h ()

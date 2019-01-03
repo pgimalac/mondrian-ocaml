@@ -40,8 +40,13 @@ let open_window
 let _ =
   if Array.length Sys.argv >= 3
   then begin
-      let x = int_of_string_opt Sys.argv.(1) in
-      let y = int_of_string_opt Sys.argv.(2) in
+      let home_made_int_of_string_opt s =
+        try
+          Some (int_of_string s)
+        with Failure _ -> None
+      in
+      let x = home_made_int_of_string_opt Sys.argv.(1) in
+      let y = home_made_int_of_string_opt Sys.argv.(2) in
       match x, y with
       | Some x, Some y ->
          if x >= 600 && y >=600

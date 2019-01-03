@@ -137,8 +137,15 @@ let select_mode st =
   if not st.button
   then None
   else
+    let rec home_made_find_opt p l =
+      match l with
+      | h :: q -> if p h
+                  then Some h
+                  else home_made_find_opt p q
+      | [] -> None
+    in
     let hovers =
-      List.find_opt
+      home_made_find_opt
         (fun (btn, _) -> is_click btn st)
         (buttons @ game_mode_buttons @ game_color_buttons)
     in
